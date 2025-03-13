@@ -134,7 +134,7 @@ class PovrayScene(Stage):
                 beam_elements_at_current_frame.append("\n")
                 element_at_current_frame = prism(
                     xs[frame_number,:,i],
-                    Qs[frame_number,:,i],
+                    Qs[frame_number,:,:,i],
                     np.linalg.norm(xs[frame_number,:,i+1]-xs[frame_number,:,i]),
                     beam_width,
                     beam_thickness,
