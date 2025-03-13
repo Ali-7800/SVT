@@ -144,7 +144,7 @@ class PovrayScene(Stage):
                     tab="    ",
                 )
                 beam_elements_at_current_frame.append(element_at_current_frame)
-            beam_at_current_frame = "\n".join(beam_at_current_frame)
+            beam_at_current_frame = "\n".join(beam_elements_at_current_frame)
             beam_dynamic_object.append(beam_at_current_frame)
         self.dynamic_objects.append(beam_dynamic_object)
 
