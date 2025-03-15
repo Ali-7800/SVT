@@ -10,6 +10,6 @@ from svt.datafile_format import (
     RhinoSceneDataFile,
     ThreeJSSceneDataFile,
 )
-from svt.rendering_utils import (
-    constant_appearence_function
+from svt.appearence import (
+    DefaultAppearence
 )

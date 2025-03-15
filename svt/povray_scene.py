@@ -8,7 +8,8 @@ from scipy import interpolate
 from tqdm import tqdm
 
 from svt._povmacros import sphere_sweep,prism, sphere, cone, cylinder, plane, mesh, render
-from svt.stage import Stage,StageObject
+from svt.stage import Stage
+from svt.appearence import DefaultAppearence
 
 class PovrayScene(Stage):
     """ 
@@ -21,12 +22,11 @@ class PovrayScene(Stage):
     """
     def __init__(
         self,
-        FPS,
-        background_color=[1.0,1.0,1.0],
-        multiprocessing_flag=True,
-        threads_per_agent=4,
+        FPS=20,
+        appearence = DefaultAppearence(),
         ) -> None:
 
+        self.appearence = appearence
         #initialize basic environment here
         self.pre_scripts = '''
         #version 3.6; // 3.7;
@@ -43,23 +43,16 @@ class PovrayScene(Stage):
         #include "functions.inc"
         #include "math.inc"
         #include "transforms.inc"
-        ''' + "background{"+"color rgb<{0},{1},{2}>".format(background_color[0],background_color[1],background_color[2])+"}"
+        ''' + "background{"+"color rgb<{0},{1},{2}>".format(appearence.background_color[0],appearence.background_color[1],appearence.background_color[2])+"}"
         self.pre_scripts = ""
         Stage.__init__(self)
-
+        self.FPS = FPS
         self.static_objects = []
         self.dynamic_objects = []
-        self.FPS = FPS
-        # Multiprocessing Configuration
-        self.multiprocessing_flag = multiprocessing_flag
-        if self.multiprocessing_flag:
-            self.threads_per_agent = threads_per_agent  # Number of thread use per rendering process.
-            self.n_agents = multiprocessing.cpu_count() // 2  # number of parallel rendering.
-    
+        
     def add_simulation_data(
         self,
-        data:dict,
-        appereance_functions:dict,):
+        data:dict,):
         
         """
         Appends all objects in data from PovraySceneDataFile
@@ -75,7 +68,6 @@ class PovrayScene(Stage):
         self.runtime = self.times.max()
         self.total_frame = int(self.runtime * self.FPS)  # Number of frames for the scene video
         self.times_true = np.linspace(0, self.runtime, self.total_frame)  # Adjusted timescale
-        self.interpolated_times = interpolate.interp1d(self.times, self.times, axis=0)(self.times_true)
 
         #add rod data
         if "rods_data" in data:
@@ -85,7 +77,7 @@ class PovrayScene(Stage):
                 for rod_data in rod_group_data:
                     self.add_rod(
                         rod_data,
-                        appereance_functions["rods_data"][rod_group_name],
+                        partial(self.appearence.rod_groups,rod_group_name),
                     )
 
         #add beam data
@@ -95,7 +87,7 @@ class PovrayScene(Stage):
                 beam_data = beams_data[beam_name]
                 self.add_rectangular_beam(
                     beam_data,
-                    appereance_functions["beams_data"][beam_name],
+                    partial(self.appearence.beam,beam_name),
                 )
 
         #add static mesh data
@@ -105,7 +97,7 @@ class PovrayScene(Stage):
                 mesh_data = meshes_data[mesh_name]
                 self.add_mesh(
                     mesh_data,
-                    appereance_functions["static_meshes_data"][mesh_name],
+                    partial(self.appearence.static_mesh,mesh_name),
                     static=True
                 )
 
@@ -116,7 +108,7 @@ class PovrayScene(Stage):
                 mesh_data = meshes_data[mesh_name]
                 self.add_mesh(
                     mesh_data,
-                    appereance_functions["dynamic_meshes_data"][mesh_name],
+                    partial(self.appearence.dynamic_mesh,mesh_name),
                     static=False,
                 )
 
@@ -127,7 +119,7 @@ class PovrayScene(Stage):
                 sphere_data = spheres_data[sphere_name]
                 self.add_sphere(
                     sphere_data,
-                    appereance_functions["spheres_data"][sphere_name],
+                    partial(self.appearence.sphere,sphere_name),
                 )
 
         #add cylinder data
@@ -137,7 +129,7 @@ class PovrayScene(Stage):
                 cylinder_data = cylinders_data[cylinder_name]
                 self.add_cylinder(
                     cylinder_data,
-                    appereance_functions["cylinders_data"][cylinder_name],
+                    partial(self.appearence.cylinder,cylinder_name),
                 )
 
 
@@ -356,15 +348,14 @@ class PovrayScene(Stage):
             Return list of pov-scripts (string) that includes camera and assigned lightings.
         """ 
         scripts = {}
-            for idx, camera in enumerate(self.cameras):
-                light_ids = self._light_assign[idx] + self._light_assign[-1]
-                cmds = []
-                cmds.append(self.pre_scripts)
-                cmds.append(str(camera))  # Script camera
-                for light_id in light_ids:  # Script Lightings
-                    cmds.append(str(self.lights[light_id]))
-                cmds.append(self.post_scripts)
-                scripts[camera.name] = "\n".join(cmds)
+        for idx, camera in enumerate(self.cameras):
+            light_ids = self._light_assign[idx] + self._light_assign[-1]
+            cmds = []
+            cmds.append(self.pre_scripts)
+            cmds.append(str(camera))  # Script camera
+            for light_id in light_ids:  # Script Lightings
+                cmds.append(str(self.lights[light_id]))
+            scripts[camera.name] = "\n".join(cmds)
         return scripts
 
     def render_frames(
@@ -399,28 +390,15 @@ class PovrayScene(Stage):
         # Process POVray
         # For each frames, a 'png' image file is generated in OUTPUT_IMAGE_DIR directory.
         pbar = tqdm(total=len(batch), desc="Rendering")  # Progress Bar
-        if self.multiprocessing_flag:
-            func = partial(
-                render,
+        for filename in batch:
+            render(
+                filename,
                 width=WIDTH,
                 height=HEIGHT,
                 display=DISPLAY_FRAMES,
-                pov_thread=self.threads_per_agent,
+                pov_thread=multiprocessing.cpu_count(),
             )
-            with Pool(self.n_agents) as p:
-                for message in p.imap_unordered(func, batch):
-                    # (TODO) POVray error within child process could be an issue
-                    pbar.update()
-        else:
-            for filename in batch:
-                render(
-                    filename,
-                    width=WIDTH,
-                    height=HEIGHT,
-                    display=DISPLAY_FRAMES,
-                    pov_thread=multiprocessing.cpu_count(),
-                )
-                pbar.update()
+            pbar.update()
 
     def render_video(
                     self,
@@ -428,7 +406,10 @@ class PovrayScene(Stage):
                     rendering_name,
                     WIDTH = 1920,
                     HEIGHT = 1080,
-                    DISPLAY_FRAMES = "Off",):
+                    DISPLAY_FRAMES = "Off",
+                    multiprocessing_flag=False,
+                    threads_per_agent=4):
+            
         batch = []
         stage_scripts = self.generate_camera_scripts()
         for view_name in stage_scripts.keys():  # Make Directory
@@ -454,15 +435,16 @@ class PovrayScene(Stage):
         # Process POVray
         # For each frames, a 'png' image file is generated in OUTPUT_IMAGE_DIR directory.
         pbar = tqdm(total=len(batch), desc="Rendering")  # Progress Bar
-        if self.multiprocessing_flag:
+        if multiprocessing_flag:
+            n_agents = multiprocessing.cpu_count() // 2  # number of parallel rendering.
             func = partial(
                 render,
                 width=WIDTH,
                 height=HEIGHT,
                 display=DISPLAY_FRAMES,
-                pov_thread=self.threads_per_agent,
+                pov_thread=threads_per_agent,
             )
-            with Pool(self.n_agents) as p:
+            with Pool(n_agents) as p:
                 for message in p.imap_unordered(func, batch):
                     # (TODO) POVray error within child process could be an issue
                     pbar.update()

@@ -31,10 +31,7 @@ class Stage:
     Camera
     Light
 
-    Properties
-    ----------
-    len : number of camera
-        The number of viewpoints
+
     """
 
     def __init__(self):
@@ -73,118 +70,118 @@ class Stage:
         raise NotImplementedError
 
 
-# Stage Objects: Camera, Light
-class StageObject:
-    """Template for stage objects
+    # Stage Objects: Camera, Light
+    class StageObject:
+        """Template for stage objects
 
-    Objects (camera and light) is defined as an object in order to
-    manipulate (translate or rotate) them during the rendering.
+        Objects (camera and light) is defined as an object in order to
+        manipulate (translate or rotate) them during the rendering.
 
-    Attributes
-    ----------
-    str : str
-        String representation of object.
-        The placeholder exist to avoid rescripting.
+        Attributes
+        ----------
+        str : str
+            String representation of object.
+            The placeholder exist to avoid rescripting.
 
-    Methods
-    -------
-    _color2str : str
-        Change triplet tuple (or list) of color into rgb string.
-    _position2str : str
-        Change triplet tuple (or list) of position vector into string.
-    """
+        Methods
+        -------
+        _color2str : str
+            Change triplet tuple (or list) of color into rgb string.
+        _position2str : str
+            Change triplet tuple (or list) of position vector into string.
+        """
 
-    def __init__(self):
-        self.str = ""
-        self.update_script()
+        def __init__(self):
+            self.str = ""
+            self.update_script()
 
-    def update_script(self):
-        raise NotImplementedError
+        def update_script(self):
+            raise NotImplementedError
 
-    def __str__(self):
-        return self.str
+        def __str__(self):
+            return self.str
 
-    def _color2str(self, color):
-        if isinstance(color, str):
-            return color
-        elif isinstance(color, list) and len(color) == 3:
-            # RGB
-            return "rgb<{},{},{}>".format(*color)
-        else:
-            raise NotImplementedError(
-                "Only string-type color or RGB input is implemented"
-            )
+        def _color2str(self, color):
+            if isinstance(color, str):
+                return color
+            elif isinstance(color, list) and len(color) == 3:
+                # RGB
+                return "rgb<{},{},{}>".format(*color)
+            else:
+                raise NotImplementedError(
+                    "Only string-type color or RGB input is implemented"
+                )
 
-    def _position2str(self, position):
-        assert len(position) == 3
-        return "<{},{},{}>".format(*position)
+        def _position2str(self, position):
+            assert len(position) == 3
+            return "<{},{},{}>".format(*position)
 
 
-class Camera(StageObject):
-        """Camera object
+    class Camera(StageObject):
+            """Camera object
 
-        http://www.povray.org/documentation/view/3.7.0/246/
+            http://www.povray.org/documentation/view/3.7.0/246/
+
+            Attributes
+            ----------
+            location : list or tuple
+                Position vector of camera location. (length=3)
+            angle : int
+                Camera angle
+            look_at : list or tuple
+                Position vector of the location where camera points to (length=3)
+            name : str
+                Name of the view-point.
+            sky : list or tuple
+                Tilt of the camera (length=3) [default=[0,1,0]]
+            """
+
+            def __init__(self, name, location, angle, look_at, sky=(0, 1, 0)):
+                self.name = name
+                self.location = location
+                self.angle = angle
+                self.look_at = look_at
+                self.sky = sky
+                super().__init__()
+
+            def update_script(self):
+                location = self._position2str(self.location)
+                look_at = self._position2str(self.look_at)
+                sky = self._position2str(self.sky)
+                cmds = []
+                cmds.append("camera{")
+                cmds.append(f"    location {location}")
+                cmds.append(f"    angle {self.angle}")
+                cmds.append(f"    look_at {look_at}")
+                cmds.append(f"    sky {sky}")
+                cmds.append("    right x*image_width/image_height")
+                cmds.append("}")
+                self.str = "\n".join(cmds)
+
+    class Light(StageObject):
+        """Light object
 
         Attributes
         ----------
         location : list or tuple
-            Position vector of camera location. (length=3)
-        angle : int
-            Camera angle
-        look_at : list or tuple
-            Position vector of the location where camera points to (length=3)
-        name : str
-            Name of the view-point.
-        sky : list or tuple
-            Tilt of the camera (length=3) [default=[0,1,0]]
+            Position vector of light location. (length=3)
+        color : str or list
+            Color of the light.
+            Both string form of color or rgb (normalized) form is supported.
+            Example) color='White', color=[1,1,1]
         """
 
-        def __init__(self, name, location, angle, look_at, sky=(0, 1, 0)):
-            self.name = name
+        def __init__(self, location, color):
             self.location = location
-            self.angle = angle
-            self.look_at = look_at
-            self.sky = sky
+            self.color = color
             super().__init__()
 
         def update_script(self):
             location = self._position2str(self.location)
-            look_at = self._position2str(self.look_at)
-            sky = self._position2str(self.sky)
+            color = self._color2str(self.color)
             cmds = []
-            cmds.append("camera{")
-            cmds.append(f"    location {location}")
-            cmds.append(f"    angle {self.angle}")
-            cmds.append(f"    look_at {look_at}")
-            cmds.append(f"    sky {sky}")
-            cmds.append("    right x*image_width/image_height")
+            cmds.append("light_source{")
+            cmds.append(f"    {location}")
+            cmds.append(f"    color {color}")
             cmds.append("}")
             self.str = "\n".join(cmds)
-
-class Light(StageObject):
-    """Light object
-
-    Attributes
-    ----------
-    location : list or tuple
-        Position vector of light location. (length=3)
-    color : str or list
-        Color of the light.
-        Both string form of color or rgb (normalized) form is supported.
-        Example) color='White', color=[1,1,1]
-    """
-
-    def __init__(self, location, color):
-        self.location = location
-        self.color = color
-        super().__init__()
-
-    def update_script(self):
-        location = self._position2str(self.location)
-        color = self._color2str(self.color)
-        cmds = []
-        cmds.append("light_source{")
-        cmds.append(f"    {location}")
-        cmds.append(f"    color {color}")
-        cmds.append("}")
-        self.str = "\n".join(cmds)
