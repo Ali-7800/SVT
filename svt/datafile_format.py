@@ -6,10 +6,11 @@ class DataFile:
     def __init__(self,name:str,time:np.ndarray):
         self.name = name
         self.time = time
+        self.data = {}
         self.rod_groups = []
         self.rectangular_beams = []
-        self.mesh_surfaces = []
-        self.mesh_rigid_bodies = []
+        self.static_meshes = []
+        self.dynamic_meshes = []
         self.spheres = []
         self.cylinders = []
     
@@ -57,7 +58,7 @@ class DataFile:
             assert hasattr(mesh, 'face_indices')
         except AssertionError:
             raise("given mesh object does not have face indices")
-        self.mesh_surfaces.append((name,mesh))
+        self.static_meshes.append((name,mesh))
     
     def add_dynamic_mesh(self,name:str,mesh:object,post_processing_dict:dict):
         try:
@@ -76,7 +77,7 @@ class DataFile:
             assert "vertex_normals" in post_processing_dict
         except:
             raise("given mesh post processing dictionary does not have vertex normals")
-        self.mesh_rigid_bodies.append((name,mesh,post_processing_dict))
+        self.dynamic_meshes.append((name,mesh,post_processing_dict))
     
     def add_sphere(self,name:str,post_processing_dict:dict):
         try:
@@ -109,71 +110,86 @@ class PovraySceneDataFile(DataFile):
         DataFile.__init__(self,name,time)
 
     def save_to(self, folder: str):
-        # Save data as npz file
-        data = {}
-        data["time"] = np.array(self.time)
+        # Save data as dat file
+        self.data["time"] = np.array(self.time)
         
         #add rod data
-        rod_data = {}
-        for rod_group_name,rod_group in self.rod_groups:
-            rod_group_data = []
-            for rod_dict in rod_group:
-                rod_data = {}
-                rod_data["position"] = rod_dict["position"]
-                rod_data["radius"] = rod_dict["radius"]
-                rod_group_data.append(rod_data)
-            rod_data[rod_group_name] = rod_group_data
+        if len(self.rod_groups)>0:
+            rods_data = {}
+            for rod_group_name,rod_group in self.rod_groups:
+                rod_group_data = []
+                for rod_dict in rod_group:
+                    rod_data = {}
+                    rod_data["position"] = rod_dict["position"]
+                    rod_data["radius"] = rod_dict["radius"]
+                    rod_group_data.append(rod_data)
+                rods_data[rod_group_name] = rod_group_data
+            self.data["rods_data"] = rods_data
         
         #add beam data
-        beam_data = {}
-        for beam_name,beam_dict,width,thickness in self.rectangular_beams:
-            beam_data = {}
-            beam_data["position"] = beam_dict["position"]
-            beam_data["radius"] = beam_dict["radius"]
-            beam_data["directors"] = beam_dict["directors"]
-            beam_data["width"] = width
-            beam_data["thickness"] = thickness
-            beam_data[beam_name] = beam_data
+        if len(self.rectangular_beams)>0:
+            beams_data = {}
+            for beam_name,beam_dict,width,thickness in self.rectangular_beams:
+                beam_data = {}
+                beam_data["position"] = beam_dict["position"]
+                beam_data["radius"] = beam_dict["radius"]
+                beam_data["directors"] = beam_dict["directors"]
+                beam_data["width"] = width
+                beam_data["thickness"] = thickness
+                beams_data[beam_name] = beam_data
+            self.data["beams_data"] = beam_data
         
-        #add mesh surface data
-        for mesh_name,mesh in self.mesh_surfaces:
-            mesh_surface_data = {}
-            mesh_surface_data["vertices"] = np.array(mesh.vertices)
-            mesh_surface_data["texture_vertices"] = np.array(mesh.texture_vertices)
-            mesh_surface_data["vertex_normals"] = np.array(mesh.vertex_normals)
-            mesh_surface_data["face_indices"] = np.array(mesh.face_indices)
-            data[mesh_name] = mesh_surface_data
-
-        #add mesh rigid body data
-        for mesh_name,mesh,mesh_dict in self.mesh_rigid_bodies:
-            mesh_rigid_body_data = {}
-            mesh_rigid_body_data["vertices"] = mesh_dict["vertices"]
-            mesh_rigid_body_data["vertex_normals"] = mesh_dict["vertex_normals"]
-            mesh_rigid_body_data["texture_vertices"] = np.array(mesh.texture_vertices)
-            mesh_rigid_body_data["face_indices"] = np.array(mesh.face_indices)
-            data[mesh_name] = mesh_surface_data
+        #add static mesh data
+        if len(self.static_meshes)>0:
+            static_meshes_data = {}
+            for mesh_name,mesh in self.static_meshes:
+                static_mesh_data = {}
+                static_mesh_data["vertices"] = np.array(mesh.vertices)
+                static_mesh_data["texture_vertices"] = np.array(mesh.texture_vertices)
+                static_mesh_data["vertex_normals"] = np.array(mesh.vertex_normals)
+                static_mesh_data["face_indices"] = np.array(mesh.face_indices)
+                static_meshes_data[mesh_name] = static_mesh_data
+            self.data["static_meshes_data"] = static_meshes_data
+            
+        #add dynamic mesh data
+        if len(self.dynamic_meshes)>0:
+            dynamic_meshes_data = {}
+            for mesh_name,mesh,mesh_dict in self.dynamic_meshes:
+                dynamic_mesh_data = {}
+                dynamic_mesh_data["vertices"] = mesh_dict["vertices"]
+                dynamic_mesh_data["vertex_normals"] = mesh_dict["vertex_normals"]
+                dynamic_mesh_data["texture_vertices"] = np.array(mesh.texture_vertices)
+                dynamic_mesh_data["face_indices"] = np.array(mesh.face_indices)
+                dynamic_meshes_data[mesh_name] = dynamic_mesh_data
+            self.data["dynamic_meshes_data"] = dynamic_meshes_data
 
         #add sphere data
-        for sphere_name,sphere_dict in self.spheres:
-            sphere_data = {}
-            sphere_data["position"] = sphere_dict["position"]
-            sphere_data["radius"] = sphere_dict["radius"]
-            data[sphere_name] = sphere_data
-        
+        if len(self.spheres)>0:
+            spheres_data = []
+            for sphere_name,sphere_dict in self.spheres:
+                sphere_data = {}
+                sphere_data["position"] = sphere_dict["position"]
+                sphere_data["radius"] = sphere_dict["radius"]
+                spheres_data[sphere_name] = sphere_data
+            self.data["spheres_data"] = spheres_data
+            
         #add cylinder data
-        for cylinder_name,cylinder_dict in self.cylinders:
-            cylinder_data = {}
-            cylinder_data["position"] = cylinder_dict["position"]
-            cylinder_data["radius"] = cylinder_dict["radius"]
-            data[cylinder_name] = cylinder_data
-        
+        if len(self.cylinders)>0:
+            cylinders_data = []
+            for cylinder_name,cylinder_dict in self.cylinders:
+                cylinder_data = {}
+                cylinder_data["position"] = cylinder_dict["position"]
+                cylinder_data["radius"] = cylinder_dict["radius"]
+                cylinders_data[cylinder_name] = cylinder_data
+            self.data["cylinders_data"] = cylinders_data
+
         save_file = os.path.join(folder, self.name+".dat")
         if os.path.exists(save_file):
             os.remove(save_file)
         else:
             os.makedirs(os.path.dirname(save_file), exist_ok=True)
         file = open(save_file, "wb")
-        pickle.dump(data, file)
+        pickle.dump(self.data, file)
         file.close()
         
 class RhinoSceneDataFile(DataFile):

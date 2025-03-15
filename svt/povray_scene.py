@@ -1,16 +1,3 @@
-""" POVrayScene
-
-This script reads simulated data file to render POVray animation movie.
-The data file should contain dictionary of positions vectors and times.
-
-The script supports multiple camera position where a video is generated
-for each camera view.
-
-Notes
------
-    The module requires POVray installed.
-"""
-
 import multiprocessing
 import os
 from functools import partial
@@ -20,20 +7,28 @@ import numpy as np
 from scipy import interpolate
 from tqdm import tqdm
 
-from svt._povmacros import Stage, sphere_sweep,prism, sphere, cone, cylinder, plane, mesh, render
+from svt._povmacros import sphere_sweep,prism, sphere, cone, cylinder, plane, mesh, render
+from svt.stage import Stage,StageObject
 
 class PovrayScene(Stage):
+    """ 
+    This class creates a scene that can be used for rendering using POVray.
+    The scene is initalized
+
+    Notes
+    -----
+        PovrayScene requires POVray installed.
+    """
     def __init__(
         self,
         FPS,
-        times,
         background_color=[1.0,1.0,1.0],
         multiprocessing_flag=True,
         threads_per_agent=4,
         ) -> None:
 
         #initialize basic environment here
-        self.default_script = '''
+        self.pre_scripts = '''
         #version 3.6; // 3.7;
         #default{ finish{ ambient 0.1 diffuse 0.9 }}
         #include "colors.inc"
@@ -49,22 +44,103 @@ class PovrayScene(Stage):
         #include "math.inc"
         #include "transforms.inc"
         ''' + "background{"+"color rgb<{0},{1},{2}>".format(background_color[0],background_color[1],background_color[2])+"}"
-        Stage.__init__(self,pre_scripts = self.default_script)
+        self.pre_scripts = ""
+        Stage.__init__(self)
 
         self.static_objects = []
         self.dynamic_objects = []
         self.FPS = FPS
-        self.times = times
-        self.runtime = self.times.max()
-        self.total_frame = int(self.runtime * self.FPS)  # Number of frames for the scene video
-        self.times_true = np.linspace(0, self.runtime, self.total_frame)  # Adjusted timescale
-        self.interpolated_times = interpolate.interp1d(self.times, self.times, axis=0)(self.times_true)
         # Multiprocessing Configuration
         self.multiprocessing_flag = multiprocessing_flag
         if self.multiprocessing_flag:
             self.threads_per_agent = threads_per_agent  # Number of thread use per rendering process.
             self.n_agents = multiprocessing.cpu_count() // 2  # number of parallel rendering.
+    
+    def add_simulation_data(
+        self,
+        data:dict,
+        appereance_functions:dict,):
         
+        """
+        Appends all objects in data from PovraySceneDataFile
+        Parameters
+        ----------
+        data: dictionary
+            Should contain data from a PovraySceneDataFile.
+        appearence_functions: dictionary
+            Should contact appearence functions for each object in data
+        """
+
+        self.times = data["times"]
+        self.runtime = self.times.max()
+        self.total_frame = int(self.runtime * self.FPS)  # Number of frames for the scene video
+        self.times_true = np.linspace(0, self.runtime, self.total_frame)  # Adjusted timescale
+        self.interpolated_times = interpolate.interp1d(self.times, self.times, axis=0)(self.times_true)
+
+        #add rod data
+        if "rods_data" in data:
+            rods_data = data["rods_data"]
+            for rod_group_name in rods_data:
+                rod_group_data = rods_data[rod_group_name]
+                for rod_data in rod_group_data:
+                    self.add_rod(
+                        rod_data,
+                        appereance_functions["rods_data"][rod_group_name],
+                    )
+
+        #add beam data
+        if "beams_data" in data:
+            beams_data = data["beams_data"]
+            for beam_name in beams_data:
+                beam_data = beams_data[beam_name]
+                self.add_rectangular_beam(
+                    beam_data,
+                    appereance_functions["beams_data"][beam_name],
+                )
+
+        #add static mesh data
+        if "static_meshes_data" in data:
+            meshes_data = data["static_meshes_data"]
+            for mesh_name in meshes_data:
+                mesh_data = meshes_data[mesh_name]
+                self.add_mesh(
+                    mesh_data,
+                    appereance_functions["static_meshes_data"][mesh_name],
+                    static=True
+                )
+
+        #add dynamic mesh data
+        if "dynamic_meshes_data" in data:
+            meshes_data = data["dynamic_meshes_data"]
+            for mesh_name in meshes_data:
+                mesh_data = meshes_data[mesh_name]
+                self.add_mesh(
+                    mesh_data,
+                    appereance_functions["dynamic_meshes_data"][mesh_name],
+                    static=False,
+                )
+
+        #add sphere data
+        if "spheres_data" in data:
+            spheres_data = data["spheres_data"]
+            for sphere_name in spheres_data:
+                sphere_data = spheres_data[sphere_name]
+                self.add_sphere(
+                    sphere_data,
+                    appereance_functions["spheres_data"][sphere_name],
+                )
+
+        #add cylinder data
+        if "cylinders_data" in data:
+            cylinders_data = data["cylinders_data"]
+            for cylinder_name in cylinders_data:
+                cylinder_data = cylinders_data[cylinder_name]
+                self.add_cylinder(
+                    cylinder_data,
+                    appereance_functions["cylinders_data"][cylinder_name],
+                )
+
+
     def add_rod(self,
                 rod_data,
                 appearence_function,
@@ -104,8 +180,6 @@ class PovrayScene(Stage):
     def add_rectangular_beam(
                 self,
                 beam_data,
-                beam_width,
-                beam_thickness,
                 appearence_function,
                 ):
         """
@@ -136,8 +210,8 @@ class PovrayScene(Stage):
                     xs[frame_number,:,i],
                     Qs[frame_number,:,:,i],
                     np.linalg.norm(xs[frame_number,:,i+1]-xs[frame_number,:,i]),
-                    beam_width,
-                    beam_thickness,
+                    beam_data["width"],
+                    beam_data["thickness"],
                     color="rgb<{0},{1},{2}>".format(r,g,b),
                     transmit=t,
                     interpolation="linear_spline",
@@ -273,6 +347,26 @@ class PovrayScene(Stage):
                 )
             self.static_objects.append(mesh_static_object)
 
+    def generate_camera_scripts(self):
+        """
+        Generate pov-ray script for all camera setup
+        Returns
+        -------
+        scripts : list
+            Return list of pov-scripts (string) that includes camera and assigned lightings.
+        """ 
+        scripts = {}
+            for idx, camera in enumerate(self.cameras):
+                light_ids = self._light_assign[idx] + self._light_assign[-1]
+                cmds = []
+                cmds.append(self.pre_scripts)
+                cmds.append(str(camera))  # Script camera
+                for light_id in light_ids:  # Script Lightings
+                    cmds.append(str(self.lights[light_id]))
+                cmds.append(self.post_scripts)
+                scripts[camera.name] = "\n".join(cmds)
+        return scripts
+
     def render_frames(
                 self,
                 output_images_directory,
@@ -281,7 +375,7 @@ class PovrayScene(Stage):
                 HEIGHT = 1080,
                 DISPLAY_FRAMES = "Off",):
         batch = []
-        stage_scripts = self.generate_scripts()
+        stage_scripts = self.generate_camera_scripts()
         for view_name in stage_scripts.keys():  # Make Directory
             output_path = os.path.join(output_images_directory, view_name)
             os.makedirs(output_path, exist_ok=True)
@@ -336,7 +430,7 @@ class PovrayScene(Stage):
                     HEIGHT = 1080,
                     DISPLAY_FRAMES = "Off",):
         batch = []
-        stage_scripts = self.generate_scripts()
+        stage_scripts = self.generate_camera_scripts()
         for view_name in stage_scripts.keys():  # Make Directory
             output_path = os.path.join(output_images_directory, view_name)
             os.makedirs(output_path, exist_ok=True)
@@ -389,4 +483,3 @@ class PovrayScene(Stage):
             filename = rendering_name + "_" + view_name + ".mp4"
 
             os.system(f"ffmpeg -y -r {self.FPS} -i {imageset_path}/frame_%04d.png {filename}")
-
