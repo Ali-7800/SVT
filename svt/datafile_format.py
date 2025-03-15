@@ -25,7 +25,7 @@ class DataFile:
                 raise("Rod {0}'s post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary".format(i))
         self.rod_groups.append((group_name,post_processing_dict_list))
     
-    def add_rectangular_beams(self,group_name:str,post_processing_dict:list,width:float,thickness:float):
+    def add_rectangular_beam(self,group_name:str,post_processing_dict:list,width:float,thickness:float):
         try:
             assert "position" in post_processing_dict
         except:
