@@ -106,12 +106,12 @@ class DataFile:
 
 
 class PovraySceneDataFile(DataFile):
-    def __init__(self, name:str, time:np.ndarray):
-        DataFile.__init__(self,name,time)
+    def __init__(self, name:str, times:np.ndarray):
+        DataFile.__init__(self,name,times)
 
     def save_to(self, folder: str):
         # Save data as dat file
-        self.data["time"] = np.array(self.time)
+        self.data["times"] = np.array(self.times)
         
         #add rod data
         if len(self.rod_groups)>0:
