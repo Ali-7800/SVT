@@ -7,7 +7,7 @@ import numpy as np
 from scipy import interpolate
 from tqdm import tqdm
 
-from svt._povmacros import sphere_sweep,prism, sphere, cone, cylinder, plane, mesh, render
+from svt._povmacros import sphere_sweep,prism,sphere,cone,cylinder,plane,mesh,render
 from svt.stage import Stage
 from svt.appearence import DefaultAppearence
 
@@ -299,7 +299,10 @@ class PovrayScene(Stage):
                 ):
         pass
 
-    def add_plane(self,plane):
+    def add_plane(self,
+                plane,
+                appearence_function,
+                static,):
         pass
     
     def add_mesh(
