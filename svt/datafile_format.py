@@ -3,9 +3,9 @@ import os
 import pickle
 
 class DataFile:
-    def __init__(self,name:str,time:np.ndarray):
+    def __init__(self,name:str,times:np.ndarray):
         self.name = name
-        self.time = time
+        self.times = times
         self.data = {}
         self.rod_groups = []
         self.rectangular_beams = []
