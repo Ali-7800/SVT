@@ -37,10 +37,18 @@ class DefaultAppearence:
         return 1,1,1,0
     
     def static_mesh(self,name,frame):
-        return 1,1,1,0
+        texture_path = None
+        normal_path = None
+        color = [1,1,1,0]
+        smooth_triangle = False
+        return texture_path,normal_path,color,smooth_triangle
     
     def dynamic_mesh(self,name,frame):
-        return 1,1,1,0
+        texture_path = None
+        normal_path = None
+        color = [1,1,1,0]
+        smooth_triangle = False
+        return texture_path,normal_path,color,smooth_triangle
     
     def sphere(self,name,frame):
         return 1,0,0,0

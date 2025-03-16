@@ -352,7 +352,12 @@ def plane(
 def mesh(
         vertices,
         faces_indices,
-        **kwargs,
+        vertex_normals,
+        texture_vertices,
+        texture_path,
+        normal_path,
+        color,
+        smooth_triangle,
     ):
         n_faces = faces_indices.shape[0]
 
@@ -382,7 +387,7 @@ def mesh(
             )
         vertex_list.append("\n}")
 
-        if "vertex_normals" in kwargs:
+        if smooth_triangle:
             normals_list.append("\nnormal_vectors {")
             normals_list.append("\n" + str(n_vertices))
             for i in range(n_vertices):
@@ -411,7 +416,7 @@ def mesh(
             )
         face_indices_list.append("\n}")
 
-        if "texture_path" in kwargs:
+        if texture_path is not None:
             uv_vectors_list.append("\nuv_vectors {")
             uv_vectors_list.append("\n" + str(n_vertices))
             for i in range(n_vertices):
@@ -439,18 +444,17 @@ def mesh(
             uv_indices_list.append("\n}")
             texture_mapping.append(
                 '\ntexture {\npigment {\nuv_mapping \nimage_map {\njpeg "'
-                + kwargs.get("texture_path")
+                + texture_path
                 + '" \nmap_type 0\n}\n}'
             )
-            if "normal_path" in kwargs:
+            if normal_path is not None:
                 texture_mapping.append(
                     '\nnormal {\nuv_mapping \nbump_map { \njpeg "'
-                    + kwargs.get("normal_path")
+                    + normal_path
                     + '" \nmap_type 0\nbump_size 50\n}\n}'
                 )
             texture_mapping.append("\n}")
-        elif "color" in kwargs:
-            color = kwargs.get("color")
+        elif color is not None:
             color_mapping.append(
                 "\npigment { color rgbt <"
                 + str(color[0])

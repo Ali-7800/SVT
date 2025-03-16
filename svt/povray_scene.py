@@ -314,31 +314,39 @@ class PovrayScene(Stage):
             mesh_dynamic_object = [] #to store the rod povray scripts at each frame for later rendering
             mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
             mesh_vertices = np.array(mesh_data["vertices"])  # shape: (timelength,n_vertices,3)
-            # mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,n_vertices,3)
-            # texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,n_vertices,2)
+            mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,n_vertices,3)
+            texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,n_vertices,2)
             mesh_vertices = interpolate.interp1d(self.times, mesh_vertices, axis=0)(self.times_true)
             mesh_vertex_normals = interpolate.interp1d(self.times, mesh_vertex_normals, axis=0)(self.times_true)
+            texture_path,normal_path,color,smooth_triangle = appearence_function(frame_number)
             for frame_number in range(self.total_frame):
                 mesh_at_current_frame = mesh(
                     mesh_vertices[frame_number],
-                    # texture_vertices,
-                    # mesh_vertex_normals[frame_number],
                     mesh_face_indices,
-                    color = appearence_function(frame_number),
+                    mesh_vertex_normals[frame_number],
+                    texture_vertices,
+                    texture_path,
+                    normal_path,
+                    color,
+                    smooth_triangle,
                 )
                 mesh_dynamic_object.append(mesh_at_current_frame)
             self.dynamic_objects.append(mesh_dynamic_object)
         else:
             mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
             mesh_vertices = np.array(mesh_data["vertices"])  # shape: (n_vertices,3)
-            # mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (n_vertices,3)
-            # texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (n_vertices,2)
+            mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (n_vertices,3)
+            texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (n_vertices,2)
+            texture_path,normal_path,color,smooth_triangle = appearence_function(0)
             mesh_static_object = mesh(
                     mesh_vertices,
-                    # texture_vertices,
-                    # mesh_vertex_normals,
                     mesh_face_indices,
-                    color = appearence_function(0),
+                    mesh_vertex_normals,
+                    texture_vertices,
+                    texture_path,
+                    normal_path,
+                    color,
+                    smooth_triangle,
                 )
             self.static_objects.append(mesh_static_object)
 
