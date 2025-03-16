@@ -308,8 +308,9 @@ class PovrayScene(Stage):
     def add_mesh(
         self,
         mesh_data,
+        appearence_function,
         static=False,
-        **kwargs):
+        ):
         if not static:
             mesh_dynamic_object = [] #to store the rod povray scripts at each frame for later rendering
             mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
@@ -324,7 +325,7 @@ class PovrayScene(Stage):
                     # texture_vertices,
                     # mesh_vertex_normals[frame_number],
                     mesh_face_indices,
-                    **kwargs,
+                    color = appearence_function(frame_number),
                 )
                 mesh_dynamic_object.append(mesh_at_current_frame)
             self.dynamic_objects.append(mesh_dynamic_object)
@@ -338,7 +339,7 @@ class PovrayScene(Stage):
                     # texture_vertices,
                     # mesh_vertex_normals,
                     mesh_face_indices,
-                    **kwargs,
+                    appearence_function(0),
                 )
             self.static_objects.append(mesh_static_object)
 
