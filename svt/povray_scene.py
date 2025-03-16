@@ -339,7 +339,7 @@ class PovrayScene(Stage):
                     # texture_vertices,
                     # mesh_vertex_normals,
                     mesh_face_indices,
-                    appearence_function(0),
+                    color = appearence_function(0),
                 )
             self.static_objects.append(mesh_static_object)
 
