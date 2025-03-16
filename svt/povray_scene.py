@@ -44,7 +44,6 @@ class PovrayScene(Stage):
         #include "math.inc"
         #include "transforms.inc"
         ''' + "background{"+"color rgb<{0},{1},{2}>".format(appearence.background_color[0],appearence.background_color[1],appearence.background_color[2])+"}"
-        self.pre_scripts = ""
         Stage.__init__(self)
         self.FPS = FPS
         self.static_objects = []
