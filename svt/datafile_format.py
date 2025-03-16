@@ -191,37 +191,6 @@ class PovraySceneDataFile(DataFile):
         file = open(save_file, "wb")
         pickle.dump(self.data, file)
         file.close()
-        
-class RhinoSceneDataFile(DataFile):
-    def __init__(self, name:str, time:np.ndarray):
-        DataFile.__init__(self,name,time)
-
-    #TODO:finish implementing this
-    # def save_muscle_rods_rhino(post_processing_dict_list,filename,save_folder):
-    #     # Save data as npz file
-    #     time = np.array(post_processing_dict_list[0]["time"])
-    #     n_elem = np.array(post_processing_dict_list[0]["position"]).shape[-1]
-    #     n_rods = len(post_processing_dict_list)
-
-    #     position_history = np.zeros(
-    #         (n_rods, time.shape[0], 3, n_elem + 1)
-    #     )
-    #     radius_history = np.zeros((n_rods, time.shape[0], n_elem))
-
-    #     for i in range(n_rods):
-    #         position_history[i, :, :, :] = np.array(
-    #             post_processing_dict_list[i]["position"]
-    #         )
-    #         radius_history[i, :, :] = np.array(
-    #             post_processing_dict_list[i]["radius"]
-    #         )
-
-    #     np.savez(
-    #             os.path.join(save_folder, filename),
-    #             time=time,
-    #             position_history=position_history,
-    #             radius_history=radius_history,
-    #         )
 
 class ThreeJSSceneDataFile(DataFile):
     def __init__(self, name:str, time:np.ndarray):
