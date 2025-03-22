@@ -88,6 +88,9 @@ class DataFile:
     def save_to(self,folder:str):
         pass
 
+    def data_dict(self):
+        pass
+
 
 class PovraySceneDataFile(DataFile):
     def __init__(self, name:str, times:np.ndarray):
@@ -95,8 +98,20 @@ class PovraySceneDataFile(DataFile):
 
     def save_to(self, folder: str):
         # Save data as dat file
-        self.data["times"] = np.array(self.times)
-        
+        data = self.data_dict()
+        save_file = os.path.join(folder, self.name+".dat")
+        if os.path.exists(save_file):
+            os.remove(save_file)
+        else:
+            os.makedirs(os.path.dirname(save_file), exist_ok=True)
+        file = open(save_file, "wb")
+        pickle.dump(data, file)
+        file.close()
+
+    def data_dict(self):
+        # return data dictionary
+        data = {}
+        data["times"] = np.array(self.times)
         #add rod data
         if len(self.rod_groups)>0:
             rods_data = {}
@@ -108,7 +123,7 @@ class PovraySceneDataFile(DataFile):
                     rod_data["radius"] = rod_dict["radius"]
                     rod_group_data.append(rod_data)
                 rods_data[rod_group_name] = rod_group_data
-            self.data["rods_data"] = rods_data
+            data["rods_data"] = rods_data
         
         #add beam data
         if len(self.rectangular_beams)>0:
@@ -121,7 +136,7 @@ class PovraySceneDataFile(DataFile):
                 beam_data["width"] = width
                 beam_data["thickness"] = thickness
                 beams_data[beam_name] = beam_data
-            self.data["beams_data"] = beam_data
+            data["beams_data"] = beam_data
         
         #add static mesh data
         if len(self.static_meshes)>0:
@@ -133,7 +148,7 @@ class PovraySceneDataFile(DataFile):
                 static_mesh_data["vertex_normals"] = np.array(mesh.vertex_normals)
                 static_mesh_data["face_indices"] = np.array(mesh.face_indices)
                 static_meshes_data[mesh_name] = static_mesh_data
-            self.data["static_meshes_data"] = static_meshes_data
+            data["static_meshes_data"] = static_meshes_data
             
         #add dynamic mesh data
         if len(self.dynamic_meshes)>0:
@@ -145,7 +160,7 @@ class PovraySceneDataFile(DataFile):
                 dynamic_mesh_data["texture_vertices"] = np.array(mesh.texture_vertices)
                 dynamic_mesh_data["face_indices"] = np.array(mesh.face_indices)
                 dynamic_meshes_data[mesh_name] = dynamic_mesh_data
-            self.data["dynamic_meshes_data"] = dynamic_meshes_data
+            data["dynamic_meshes_data"] = dynamic_meshes_data
 
         #add sphere data
         if len(self.spheres)>0:
@@ -155,7 +170,7 @@ class PovraySceneDataFile(DataFile):
                 sphere_data["position"] = sphere_dict["position"]
                 sphere_data["radius"] = sphere_dict["radius"]
                 spheres_data[sphere_name] = sphere_data
-            self.data["spheres_data"] = spheres_data
+            data["spheres_data"] = spheres_data
             
         #add cylinder data
         if len(self.cylinders)>0:
@@ -165,16 +180,9 @@ class PovraySceneDataFile(DataFile):
                 cylinder_data["position"] = cylinder_dict["position"]
                 cylinder_data["radius"] = cylinder_dict["radius"]
                 cylinders_data[cylinder_name] = cylinder_data
-            self.data["cylinders_data"] = cylinders_data
+            data["cylinders_data"] = cylinders_data
 
-        save_file = os.path.join(folder, self.name+".dat")
-        if os.path.exists(save_file):
-            os.remove(save_file)
-        else:
-            os.makedirs(os.path.dirname(save_file), exist_ok=True)
-        file = open(save_file, "wb")
-        pickle.dump(self.data, file)
-        file.close()
+        return data
 
 class ThreeJSSceneDataFile(DataFile):
     def __init__(self, name:str, time:np.ndarray):
