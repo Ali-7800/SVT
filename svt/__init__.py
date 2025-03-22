@@ -7,7 +7,6 @@ from svt.povray_scene import (
 from svt.datafile_format import (
     DataFile,
     PovraySceneDataFile,
-    RhinoSceneDataFile,
     ThreeJSSceneDataFile,
 )
 from svt.appearence import (
