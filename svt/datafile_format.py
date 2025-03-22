@@ -47,24 +47,12 @@ class DataFile:
         except AssertionError:
             raise("given mesh object does not have vertices")
         try:
-            assert hasattr(mesh, 'vertex_normals')
-        except AssertionError:
-            raise("given mesh object does not have vertex normals")
-        try:
-            assert hasattr(mesh, 'texture_vertices')
-        except AssertionError:
-            raise("given mesh object does not have texture vertices")
-        try:
             assert hasattr(mesh, 'face_indices')
         except AssertionError:
             raise("given mesh object does not have face indices")
         self.static_meshes.append((name,mesh))
     
     def add_dynamic_mesh(self,name:str,mesh:object,post_processing_dict:dict):
-        try:
-            assert hasattr(mesh, 'texture_vertices')
-        except AssertionError:
-            raise("given mesh object does not have texture vertices")
         try:
             assert hasattr(mesh, 'face_indices')
         except AssertionError:
@@ -73,10 +61,6 @@ class DataFile:
             assert "vertices" in post_processing_dict
         except:
             raise("given mesh post processing dictionary does not have vertices")
-        try:
-            assert "vertex_normals" in post_processing_dict
-        except:
-            raise("given mesh post processing dictionary does not have vertex normals")
         self.dynamic_meshes.append((name,mesh,post_processing_dict))
     
     def add_sphere(self,name:str,post_processing_dict:dict):

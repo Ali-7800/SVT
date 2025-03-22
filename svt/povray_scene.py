@@ -314,11 +314,26 @@ class PovrayScene(Stage):
             mesh_dynamic_object = [] #to store the rod povray scripts at each frame for later rendering
             mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
             mesh_vertices = np.array(mesh_data["vertices"])  # shape: (timelength,n_vertices,3)
-            mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,n_vertices,3)
-            texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,n_vertices,2)
             mesh_vertices = interpolate.interp1d(self.times, mesh_vertices, axis=0)(self.times_true)
-            mesh_vertex_normals = interpolate.interp1d(self.times, mesh_vertex_normals, axis=0)(self.times_true)
             texture_path,normal_path,color,smooth_triangle = appearence_function(frame_number)
+            if smooth_triangle:
+                try:
+                    assert "vertex_normals" in mesh_data
+                    mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,n_vertices,3)
+                    mesh_vertex_normals = interpolate.interp1d(self.times, mesh_vertex_normals, axis=0)(self.times_true)
+                except AssertionError:
+                    raise("vertex_normals are needed for smooth triangle mesh")
+            else:
+                mesh_vertex_normals = np.zeros_like(mesh_vertices)
+            if (texture_path is not None) or (normal_path is not None):
+                try:
+                    assert "texture_vertices" in mesh_data
+                    texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,n_vertices,2)
+                except AssertionError:
+                    raise("texture_vertices are needed for textured mesh")
+            else:
+                texture_vertices = np.zeros_like(mesh_vertices)
+
             for frame_number in range(self.total_frame):
                 mesh_at_current_frame = mesh(
                     mesh_vertices[frame_number],
