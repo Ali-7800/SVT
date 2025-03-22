@@ -315,7 +315,7 @@ class PovrayScene(Stage):
             mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
             mesh_vertices = np.array(mesh_data["vertices"])  # shape: (timelength,n_vertices,3)
             mesh_vertices = interpolate.interp1d(self.times, mesh_vertices, axis=0)(self.times_true)
-            texture_path,normal_path,color,smooth_triangle = appearence_function(frame_number)
+            texture_path,normal_path,color_func,smooth_triangle = appearence_function()
             if smooth_triangle:
                 try:
                     assert "vertex_normals" in mesh_data
@@ -342,7 +342,7 @@ class PovrayScene(Stage):
                     texture_vertices,
                     texture_path,
                     normal_path,
-                    color,
+                    color_func(frame_number),
                     smooth_triangle,
                 )
                 mesh_dynamic_object.append(mesh_at_current_frame)
@@ -352,7 +352,7 @@ class PovrayScene(Stage):
             mesh_vertices = np.array(mesh_data["vertices"])  # shape: (n_vertices,3)
             mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (n_vertices,3)
             texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (n_vertices,2)
-            texture_path,normal_path,color,smooth_triangle = appearence_function(0)
+            texture_path,normal_path,color,smooth_triangle = appearence_function()
             mesh_static_object = mesh(
                     mesh_vertices,
                     mesh_face_indices,
