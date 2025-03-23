@@ -17,4 +17,12 @@ from svt.units import (
     DerivedUnit,
     UnitSystem,
 )
-from svt.SI_units import *
+from svt.SI_units import (
+    meter,
+    second,
+    kilogram,
+    celsius,
+    Kelvin,
+    Newton,
+    Pascal,
+)
