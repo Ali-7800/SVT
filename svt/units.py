@@ -159,4 +159,3 @@ class UnitSystem:
         minimum_SI_prefix = self.unit_list[0].SI_prefixes[np.argmin(abs(minimum_SI_power-self.unit_list[0].SI_powers))]
         for unit in self.unit_list:
             unit.convert_to(minimum_SI_prefix)
-            
