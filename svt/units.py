@@ -10,114 +10,68 @@ class Unit:
         ) -> None:
         self.power = power
         self.symbol = symbol
-        self.SI_powers = np.array([
-            -30,
-            -27,
-            -24,
-            -21,
-            -18,
-            -15,
-            -12,
-            -9,
-            -6,
-            -3,
-            -2,
-            -1,
-            0,
-            1,
-            2,
-            3,
-            6,
-            9,
-            12,
-            15,
-            18,
-            21,
-            24,
-            27,
-            30
-        ])
-        self.SI_prefixes = [
-            "q",
-            "r",
-            "y",
-            "z",
-            "a",
-            "f",
-            "p",
-            "n",
-            "µ",
-            "m",
-            "c",
-            "d",
-            "",
-            "da",
-            "h",
-            "k",
-            "M",
-            "G",
-            "T",
-            "P",
-            "E",
-            "Z",
-            "Y",
-            "R",
-            "Q",
-        ]
-        self.valid_dimensions = ["length","mass","time","temperature"]
         self.numerator_dimensions = numerator_dimensions
         self.denominator_dimensions = denominator_dimensions
         for dimension in self.numerator_dimensions:
-            try:
-                assert dimension in self.valid_dimensions
-            except AssertionError:
-                raise ValueError("numerator dimensions must be one of {0}".format(self.valid_dimensions))
+            self.validity_check(dimension,"Numerator dimensions",self.valid_dimensions())
         for dimension in self.denominator_dimensions:
-            try:
-                assert dimension in self.valid_dimensions
-            except AssertionError:
-                raise ValueError("denominator dimensions must be one of {0}".format(self.valid_dimensions))
+            self.validity_check(dimension,"Denominator dimensions",self.valid_dimensions())
+
         self.simplify(self.denominator_dimensions,self.numerator_dimensions)
-        self.SI_power = self.SI_powers[np.argmin(abs(self.power-self.SI_powers))]
-        self.SI_prefix = self.SI_prefixes[np.argmin(abs(self.power-self.SI_powers))]
+        self.SI_power = self.SI_powers()[np.argmin(abs(self.power-self.SI_powers()))]
+        self.SI_prefix = self.SI_prefixes()[np.argmin(abs(self.power-self.SI_powers()))]
         self.multiplier = 10.0**(self.power-self.SI_power)
 
     def return_full_symbol(self):
-        if self.derived_symbol is None:
-            return self.SI_prefix + self.symbol
-        else:
+        try:
             return self.SI_prefix + self.derived_symbol
+        except AttributeError:
+            return self.SI_prefix + self.symbol
         
     def return_dimension(self):
         return self.write_symbol(self.numerator_dimensions,self.denominator_dimensions)
     
     def convert_to(self,prefix:str):
-        try:
-            assert prefix in self.SI_prefixes
-        except AssertionError:
-            raise ValueError("{0} is not an SI prefix, must be one of {1}".format(prefix,self.SI_prefixes))
+        self.validity_check(prefix,"SI prefix",self.SI_prefixes())
         self.SI_prefix = prefix
-        self.SI_power = self.SI_powers[self.SI_prefixes.index(prefix)]
+        self.SI_power = self.SI_powers()[self.SI_prefixes().index(prefix)]
         self.multiplier = 10.0**(self.power-self.SI_power)
+    
+    def copy(self):
+        #this method returns a new unit that is a copy of the current class
+        new_unit = Unit(self.symbol,self.power,self.numerator_dimensions,self.denominator_dimensions)
+        try:
+            new_unit.derived_symbol = self.derived_symbol
+        except AttributeError:
+            pass
+        return new_unit
     
     def with_power(self,new_power):
         #this method returns a new unit with same symbol as the class instance but with a new power
         new_unit = Unit(self.symbol,new_power,self.numerator_dimensions,self.denominator_dimensions)
-        if self.derived_symbol is not None:
+        try:
             new_unit.derived_symbol = self.derived_symbol
+        except AttributeError:
+            pass
         return new_unit
     
     def with_prefix(self,new_prefix):
         #this method returns a new unit with same symbol as the class instance but with a new power that is the same as the prefix
-        try:
-            assert new_prefix in self.SI_prefixes
-        except AssertionError:
-            raise ValueError("{0} is not an SI prefix, must be one of {1}".format(new_prefix,self.SI_prefixes))
-        new_power = self.SI_powers[self.SI_prefixes.index(new_prefix)]
+        self.validity_check(new_prefix,"SI prefix",self.SI_prefixes())
+        new_power = self.SI_powers()[self.SI_prefixes().index(new_prefix)]
         new_unit = Unit(self.symbol,new_power,self.numerator_dimensions,self.denominator_dimensions)
-        if self.derived_symbol is not None:
+        try:
             new_unit.derived_symbol = self.derived_symbol
+        except AttributeError:
+            pass
         return new_unit
+    
+    @staticmethod
+    def validity_check(variable,variable_name:str,valid_variables:list):
+        try:
+            assert variable in valid_variables
+        except AssertionError:
+            raise ValueError("{0} is not a valid {1}, must be one of {2}".format(variable,variable_name,valid_variables))
     
     @staticmethod
     def simplify(numerator:list,denominator:list):
@@ -142,6 +96,19 @@ class Unit:
         else:
             symbol = "({0})/({1})".format(numerator_str[1:],denominator_str[1:])
         return symbol
+    
+    @staticmethod
+    def SI_prefixes():
+        return ["q","r","y","z","a","f","p","n","µ","m","c","d","","da","h","k","M","G","T","P","E","Z","Y","R","Q"]
+    
+    @staticmethod
+    def SI_powers():
+        return np.array([-30,-27,-24,-21,-18,-15,-12,-9,-6,-3,-2,-1,0,1,2,3,6,9,12,15,18,21,24,27,30])
+    
+    @staticmethod
+    def valid_dimensions():
+        return ["length","mass","time","temperature"]
+    
 
 
 class DerivedUnit(Unit):
@@ -189,9 +156,9 @@ class DerivedUnit(Unit):
         
         Unit.simplify(numerator_symbols,denominator_symbols)
         symbol = Unit.write_symbol(numerator_symbols,denominator_symbols)
-        self.derived_symbol = derived_symbol
         super().__init__(symbol, power = numerator_power-denominator_power-default_power,numerator_dimensions=numerator_dimensions,denominator_dimensions=denominator_dimensions)
-    
+        self.derived_symbol = derived_symbol
+
     
 class UnitSystem:
     def __init__(
@@ -217,10 +184,10 @@ class UnitSystem:
                 raise ValueError("At least one of the objects in the unit list does not have the same symbol as the others, please make sure they all have the same symbol")
 
     def convert_units_to_same_prefix(self):
-        minimum_SI_power = self.unit_list[0].SI_powers[-1]
+        minimum_SI_power = Unit.SI_powers()
         for unit in self.unit_list:
             if minimum_SI_power>unit.SI_power:
                 minimum_SI_power = unit.SI_power
-        minimum_SI_prefix = self.unit_list[0].SI_prefixes[np.argmin(abs(minimum_SI_power-self.unit_list[0].SI_powers))]
+        minimum_SI_prefix = Unit.SI_prefixes()[np.argmin(abs(minimum_SI_power-Unit.SI_powers()))]
         for unit in self.unit_list:
             unit.convert_to(minimum_SI_prefix)
