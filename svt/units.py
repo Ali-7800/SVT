@@ -66,7 +66,7 @@ class Unit:
         self.SI_prefix = self.SI_prefixes[np.argmin(abs(self.power-self.SI_powers))]
         self.multiplier = 10.0**(self.power-self.SI_power)
 
-    def return_symbol(self):
+    def return_full_symbol(self):
         if self.derived_symbol is None:
             return self.SI_prefix + self.symbol
         else:
@@ -80,7 +80,25 @@ class Unit:
         self.SI_prefix = prefix
         self.SI_power = self.SI_powers[self.SI_prefixes.index(prefix)]
         self.multiplier = 10.0**(self.power-self.SI_power)
-
+    
+    def power(self,new_power):
+        #this method returns a new unit with same symbol as the class instance but with a new power
+        new_unit = Unit(self.symbol,new_power)
+        if self.derived_symbol is not None:
+            new_unit.derived_symbol = self.derived_symbol
+        return new_unit
+    
+    def prefix(self,new_prefix):
+        #this method returns a new unit with same symbol as the class instance but with a new power that is the same as the prefix
+        try:
+            assert new_prefix in self.SI_prefixes
+        except AssertionError:
+            raise ValueError("{0} is not an SI prefix".format(new_prefix))
+        new_power = self.SI_powers[self.SI_prefixes.index(new_prefix)]
+        new_unit = Unit(self.symbol,new_power)
+        if self.derived_symbol is not None:
+            new_unit.derived_symbol = self.derived_symbol
+        return new_unit
 
 class DerivedUnit(Unit):
     def __init__(
@@ -88,6 +106,7 @@ class DerivedUnit(Unit):
         numerator_unit_list=[],
         denominator_unit_list=[],
         derived_symbol=None,
+        default_power = 0,
         ) -> None:
         numerator_power = 0
         numerator_symbol = ""
@@ -125,7 +144,7 @@ class DerivedUnit(Unit):
         else:
             symbol = "({0})/({1})".format(numerator_symbol[1:],denominator_symbol[1:])
 
-        super().__init__(symbol, power = numerator_power-denominator_power)
+        super().__init__(symbol, power = numerator_power-denominator_power-default_power)
         self.derived_symbol = derived_symbol
 
 class UnitSystem:
