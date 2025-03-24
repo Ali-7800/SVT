@@ -20,9 +20,10 @@ from svt.units import (
 from svt.SI_units import (
     meter,
     second,
+    hertz,
     kilogram,
     celsius,
-    Kelvin,
-    Newton,
-    Pascal,
+    kelvin,
+    newton,
+    pascal,
 )
