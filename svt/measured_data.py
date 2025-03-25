@@ -46,7 +46,7 @@ class MeasuredDataCollection:
         Check.condition(MeasuredData1.unit.dimension()==MeasuredData2.unit.dimension(),ValueError,"To add MeasuredData, they must have the same unit dimensions")
         if MeasuredData1.unit!=MeasuredData2.unit:
             min_SI_power = min(MeasuredData1.unit.SI_power,MeasuredData1.unit.SI_power)
-            minimum_prefix = Unit.SI_prefixes()[Unit.find_SI_power_index(min_SI_power)]
+            minimum_prefix = Unit.SI_prefixes()[Unit._find_SI_power_index(min_SI_power)]
             d1 = MeasuredData1.copy()
             d1.convert_to(minimum_prefix)
             d2 = MeasuredData2.copy()
@@ -58,7 +58,7 @@ class MeasuredDataCollection:
         Check.condition(MeasuredData1.unit.dimension()==MeasuredData2.unit.dimension(),ValueError,"To subtract MeasuredData, they must have the same unit dimensions")
         if MeasuredData1.unit!=MeasuredData2.unit:
             min_SI_power = min(MeasuredData1.unit.SI_power,MeasuredData1.unit.SI_power)
-            minimum_prefix = Unit.SI_prefixes()[Unit.find_SI_power_index(min_SI_power)]
+            minimum_prefix = Unit.SI_prefixes()[Unit._find_SI_power_index(min_SI_power)]
             d1 = MeasuredData1.copy()
             d1.convert_to(minimum_prefix)
             d2 = MeasuredData2.copy()
