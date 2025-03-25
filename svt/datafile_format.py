@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import pickle
+from svt._check import Check
 
 class DataFile:
     def __init__(self,name:str,times:np.ndarray):
@@ -16,73 +17,73 @@ class DataFile:
     
     def add_rod_group(self,group_name:str,post_processing_dict_list:list):
         for i,post_processing_dict in enumerate(post_processing_dict_list):
-            try:
-                assert "position" in post_processing_dict
-            except:
-                raise KeyError("Rod {0}'s post processing dictionary does not have position data, make sure 'position' is a key in the dictionary".format(i))
-            try:
-                assert "radius" in post_processing_dict
-            except:
-                raise KeyError("Rod {0}'s post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary".format(i))
+            Check.condition(
+                "position" in post_processing_dict,
+                KeyError,
+                "Rod {0}'s post processing dictionary does not have position data, make sure 'position' is a key in the dictionary".format(i))
+            Check.condition(
+                "radius" in post_processing_dict,
+                KeyError,
+                "Rod {0}'s post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary".format(i))
         self.rod_groups.append((group_name,post_processing_dict_list))
     
     def add_rectangular_beam(self,group_name:str,post_processing_dict:list,width:float,thickness:float):
-        try:
-            assert "position" in post_processing_dict
-        except:
-            raise KeyError("Beam's post processing dictionary does not have position data, make sure 'position' is a key in the dictionary")
-        try:
-            assert "radius" in post_processing_dict
-        except:
-            raise KeyError("Beam's post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary")
-        try:
-            assert "directors" in post_processing_dict
-        except:
-            raise KeyError("Beam's post processing dictionary does not have director data, make sure 'directors' is a key in the dictionary")        
+        Check.condition(
+            "position" in post_processing_dict,
+            KeyError,
+            "Beam's post processing dictionary does not have position data, make sure 'position' is a key in the dictionary")
+        Check.condition(
+            "radius" in post_processing_dict,
+            KeyError,
+            "Beam's post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary")
+        Check.condition(
+            "directors" in post_processing_dict,
+            KeyError,
+            "Beam's post processing dictionary does not have director data, make sure 'directors' is a key in the dictionary")   
         self.rectangular_beams.append((group_name,post_processing_dict,width,thickness))
     
     def add_static_mesh(self,name:str,mesh:object):
-        try:
-            assert hasattr(mesh, 'vertices')
-        except AssertionError:
-            raise AttributeError("given mesh object does not have vertices")
-        try:
-            assert hasattr(mesh, 'face_indices')
-        except AssertionError:
-            raise AttributeError("given mesh object does not have face indices")
+        Check.condition(
+            hasattr(mesh, 'vertices'),
+            AttributeError,
+            "Given mesh object does not have vertices!")
+        Check.condition(
+            hasattr(mesh, 'face_indices'),
+            AttributeError,
+            "Given mesh object does not have face indices!")
         self.static_meshes.append((name,mesh))
     
     def add_dynamic_mesh(self,name:str,mesh:object,post_processing_dict:dict):
-        try:
-            assert hasattr(mesh, 'face_indices')
-        except AssertionError:
-            raise AttributeError("given mesh object does not have face indices")
-        try:
-            assert "vertices" in post_processing_dict
-        except:
-            raise AttributeError("given mesh post processing dictionary does not have vertices")
+        Check.condition(
+            hasattr(mesh, 'face_indices'),
+            AttributeError,
+            "Given mesh object does not have face indices!")
+        Check.condition(
+            "vertices" in post_processing_dict,
+            AttributeError,
+            "Given mesh post processing dictionary does not have vertices!")
         self.dynamic_meshes.append((name,mesh,post_processing_dict))
     
     def add_sphere(self,name:str,post_processing_dict:dict):
-        try:
-            assert "position" in post_processing_dict
-        except:
-            raise KeyError("given sphere post processing dictionary does not have position data, make sure 'position' is a key in the dictionary")
-        try:
-            assert "radius" in post_processing_dict
-        except:
-            raise KeyError("given sphere post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary")
+        Check.condition(
+            "position" in post_processing_dict,
+            KeyError,
+            "Given sphere post processing dictionary does not have position data, make sure 'position' is a key in the dictionary")
+        Check.condition(
+            "radius" in post_processing_dict,
+            KeyError,
+            "Given sphere post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary")
         self.spheres.append((name,post_processing_dict))
 
     def add_cylinder(self,name:str,post_processing_dict:dict):
-        try:
-            assert "position" in post_processing_dict
-        except:
-            raise KeyError("given cylinder post processing dictionary does not have position data, make sure 'position' is a key in the dictionary")
-        try:
-            assert "radius" in post_processing_dict
-        except:
-            raise KeyError("given cylinder post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary")
+        Check.condition(
+            "position" in post_processing_dict,
+            KeyError,
+            "Given cylinder post processing dictionary does not have position data, make sure 'position' is a key in the dictionary")
+        Check.condition(
+            "radius" in post_processing_dict,
+            KeyError,
+            "Given cylinder post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary")
         self.cylinders.append((name,post_processing_dict))
     
     def save_to(self,folder:str):
