@@ -17,13 +17,9 @@ from svt.units import (
     DerivedUnit,
     UnitSystem,
 )
+from _check import (
+    Check
+)
 from svt.SI_units import (
-    meter,
-    second,
-    hertz,
-    kilogram,
-    celsius,
-    kelvin,
-    newton,
-    pascal,
+    SIUnitSystem
 )
