@@ -5,11 +5,10 @@ class Unit:
     def __init__(
         self,
         symbol:str,
-        power = 0,
+        prefix = "",
         numerator_dimensions = [],
         denominator_dimensions = [],
         ) -> None:
-        self.power = power
         self.symbol = symbol
         self.numerator_dimensions = numerator_dimensions
         self.denominator_dimensions = denominator_dimensions
@@ -19,9 +18,11 @@ class Unit:
             Check.validity(dimension,"Denominator dimensions",self.valid_dimensions())
 
         self.simplify(self.denominator_dimensions,self.numerator_dimensions)
-        self.SI_power = self.SI_powers()[np.argmin(abs(self.power-self.SI_powers()))]
-        self.SI_prefix = self.SI_prefixes()[np.argmin(abs(self.power-self.SI_powers()))]
-        self.multiplier = 10.0**(self.power-self.SI_power)
+        Check.validity(prefix,"prefix",self.SI_prefixes())
+        self.SI_prefix = prefix
+        self.SI_power = self.SI_powers()[self.SI_prefixes().index(prefix)]
+        self.power = self.SI_power
+        self.multiplier = 1
 
     def return_full_symbol(self):
         try:
@@ -36,20 +37,12 @@ class Unit:
         Check.validity(prefix,"SI prefix",self.SI_prefixes())
         self.SI_prefix = prefix
         self.SI_power = self.SI_powers()[self.SI_prefixes().index(prefix)]
-        self.multiplier = 10.0**(self.power-self.SI_power)
+        self.multiplier *= 10.0**(self.power-self.SI_power)
+        self.power = self.SI_power
     
     def copy(self):
         #this method returns a new unit that is a copy of the current class
-        new_unit = Unit(self.symbol,self.power,self.numerator_dimensions,self.denominator_dimensions)
-        try:
-            new_unit.derived_symbol = self.derived_symbol
-        except AttributeError:
-            pass
-        return new_unit
-    
-    def with_power(self,new_power):
-        #this method returns a new unit with same symbol as the class instance but with a new power
-        new_unit = Unit(self.symbol,new_power,self.numerator_dimensions,self.denominator_dimensions)
+        new_unit = Unit(self.symbol,self.SI_prefix,self.numerator_dimensions,self.denominator_dimensions)
         try:
             new_unit.derived_symbol = self.derived_symbol
         except AttributeError:
@@ -59,8 +52,7 @@ class Unit:
     def with_prefix(self,new_prefix):
         #this method returns a new unit with same symbol as the class instance but with a new power that is the same as the prefix
         Check.validity(new_prefix,"SI prefix",self.SI_prefixes())
-        new_power = self.SI_powers()[self.SI_prefixes().index(new_prefix)]
-        new_unit = Unit(self.symbol,new_power,self.numerator_dimensions,self.denominator_dimensions)
+        new_unit = Unit(self.symbol,new_prefix,self.numerator_dimensions,self.denominator_dimensions)
         try:
             new_unit.derived_symbol = self.derived_symbol
         except AttributeError:
@@ -101,7 +93,7 @@ class Unit:
     
     @staticmethod
     def valid_dimensions():
-        return ["length","mass","time","temperature"]
+        return ["length","mass","time","temperature","current","amount","luminousity"]
     
 
 
@@ -111,7 +103,7 @@ class DerivedUnit(Unit):
         numerator_unit_list=[],
         denominator_unit_list=[],
         derived_symbol=None,
-        default_power = 0,
+        default_prefix = "",
         ) -> None:
         numerator_power = 0
         numerator_symbols = []
@@ -138,10 +130,15 @@ class DerivedUnit(Unit):
             denominator_symbols.append(unit.symbol)
             numerator_dimensions+=unit.denominator_dimensions
             denominator_dimensions+=unit.numerator_dimensions
-        
+            
+        Check.validity(default_prefix,"SI prefix",Unit.SI_prefixes())
+        default_power = Unit.SI_powers()[Unit.SI_prefixes().index(default_prefix)]
         Unit.simplify(numerator_symbols,denominator_symbols)
         symbol = Unit.write_symbol(numerator_symbols,denominator_symbols)
-        super().__init__(symbol, power = numerator_power-denominator_power-default_power,numerator_dimensions=numerator_dimensions,denominator_dimensions=denominator_dimensions)
+        SI_power = Unit.SI_powers()[np.argmin(abs((numerator_power-denominator_power-default_power)-Unit.SI_powers()))]
+        prefix = Unit.SI_prefixes()[np.argmin(abs((numerator_power-denominator_power-default_power)-Unit.SI_powers()))]
+        super().__init__(symbol, prefix= prefix,numerator_dimensions=numerator_dimensions,denominator_dimensions=denominator_dimensions)
+        self.multiplier *= 10.0**(default_power-SI_power)
         self.derived_symbol = derived_symbol
 
     
@@ -156,7 +153,10 @@ class UnitSystem:
         #check to make sure they have the same symbol
         self.symbol = unit_list[0].symbol
         for unit in self.unit_list:
-            Check.condition(unit.symbol == self.symbol,ValueError,"At least one of the objects in the unit list does not have the same symbol as the others, please make sure they all have the same symbol")
+            Check.condition(
+                unit.symbol == self.symbol,
+                ValueError,
+                "At least one of the objects in the unit list does not have the same symbol as the others, please make sure they all have the same symbol")
 
     def convert_units_to_same_prefix(self):
         minimum_SI_power = Unit.SI_powers()

@@ -21,5 +21,5 @@ from _check import (
     Check
 )
 from svt.SI_units import (
-    SIUnitSystem
+    SI
 )
