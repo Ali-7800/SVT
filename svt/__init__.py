@@ -22,3 +22,7 @@ from _check import (
 from svt.SI_units import (
     SI
 )
+from svt.measured_data import (
+    MeasuredData,
+    MeasuredDataCollection
+)
