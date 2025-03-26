@@ -94,7 +94,7 @@ class Unit:
             return self.SI_prefix + self.symbol
         
     def dimension(self):
-        return self.write_symbol(self.numerator_dimensions,self.denominator_dimensions)
+        return self._write_symbol(self.numerator_dimensions,self.denominator_dimensions)
     
     def convert_to(self,prefix:str):
         Check.validity(prefix,"SI prefix",self.SI_prefixes())
