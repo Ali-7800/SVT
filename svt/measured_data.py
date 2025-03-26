@@ -2,6 +2,8 @@ import numpy as np
 from svt.units import Unit,DerivedUnit
 from svt._check import Check
 from typing import Union
+import matplotlib.pyplot as plt
+
 
 class MeasuredData:
     def __init__(
@@ -12,8 +14,13 @@ class MeasuredData:
         self.values = np.array(values)
         self.unit = unit
     
-    def scale(self,factor:float):
+    def scale(self,factor:float,factor_unit:Unit):
+        Check.object_class(
+            factor_unit,
+            Unit,
+            "factor_unit")
         self.values *= factor
+        self.unit = DerivedUnit([factor_unit,self.unit])
 
     def convert_to(self,prefix:str):
         Check.validity(prefix,"SI prefix",Unit.SI_prefixes())
@@ -39,6 +46,15 @@ class MeasuredDataCollection:
         Check.condition(key not in self.keys,KeyError,"Key already used for other MeasuredData, please use a different key")
         setattr(self, key, data)
         self.keys.append(key)
+    
+    def plot2D(self,x_key:str,y_key:str,**kwargs):
+        Check.validity(x_key,"key1",self.keys)
+        Check.validity(y_key,"key2",self.keys)
+        x = getattr(self,x_key)
+        y = getattr(self,y_key)
+        plt.plot(x.values,y.values,**kwargs)
+        plt.xlabel(x_key + " ({0})".format(x.unit.full_symbol()))
+        plt.ylabel(y_key + " ({0})".format(y.unit.full_symbol()))
     
     @staticmethod
     def add(MeasuredData1,MeasuredData2):
