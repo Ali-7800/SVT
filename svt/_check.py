@@ -19,13 +19,35 @@ class Check:
                 raise ValueError(error_msg)
     
     @staticmethod
-    def length(list,list_name:str,min_length:int,error_msg=None):
+    def min_length(list,list_name:str,min_length:int,error_msg=None):
         """ 
         This method is for checking a list is of a certian length
         """
         if len(list)<min_length:
             if error_msg is None:
                 raise ValueError("{0} must at least have {1} element/s".format(list_name,min_length))
+            else:
+                raise ValueError(error_msg)
+    
+    @staticmethod
+    def max_length(list,list_name:str,max_length:int,error_msg=None):
+        """ 
+        This method is for checking a list is of a certian length
+        """
+        if len(list)>max_length:
+            if error_msg is None:
+                raise ValueError("{0} must at most have {1} element/s".format(list_name,max_length))
+            else:
+                raise ValueError(error_msg)
+    
+    @staticmethod
+    def length(list,list_name:str,length:int,error_msg=None):
+        """ 
+        This method is for checking a list is of a certian length
+        """
+        if len(list)==length:
+            if error_msg is None:
+                raise ValueError("{0} must have exactly {1} element/s".format(list_name,length))
             else:
                 raise ValueError(error_msg)
             
