@@ -186,6 +186,8 @@ class DerivedUnit(Unit):
         denominator_symbols = []
         denominator_dimensions = []
 
+        Check.object_class(numerator_unit_list,list,"numerator_unit_list")
+        Check.object_class(denominator_unit_list,list,"denominator_unit_list")
         Check.condition(len(numerator_unit_list)>0 or len(denominator_unit_list)>0,ValueError,"There must be at least one unit in the one of the unit lists")
 
         for unit in numerator_unit_list:
