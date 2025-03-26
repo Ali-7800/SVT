@@ -34,12 +34,11 @@ class MeasuredDataCollection:
             setattr(self, key, kwargs[key])
         self.keys+=kwargs.keys()
         
-    def append(self,**kwargs):
-        for key in kwargs.keys():
-            Check.object_class(kwargs[key],MeasuredData,"","Only MeasuredData can be appended to a MeasuredDataCollection")
-            Check.condition(key not in self.keys,KeyError,"Key already used for other MeasuredData, please use a different key")
-            setattr(self, key, kwargs[key])
-        self.keys+=kwargs.keys()
+    def append(self,key,data):
+        Check.object_class(data,MeasuredData,"","Only MeasuredData can be appended to a MeasuredDataCollection")
+        Check.condition(key not in self.keys,KeyError,"Key already used for other MeasuredData, please use a different key")
+        setattr(self, key, data)
+        self.keys.append(key)
     
     @staticmethod
     def add(MeasuredData1,MeasuredData2):
