@@ -58,7 +58,7 @@ class Check:
         """
         if not isinstance(variable,desired_class):
             if error_msg is None:
-                raise ValueError("{0} must be an instance of {1}".format(variable_name,desired_class.__name__))
+                raise ValueError("{0} must be an instance of {1}, it is instead a {2}".format(variable_name,desired_class.__name__,type(variable).__name__))
             else:
                 raise ValueError(error_msg)
     
