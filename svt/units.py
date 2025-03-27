@@ -48,6 +48,9 @@ class Unit:
     
     def full_symbol(self):
         return self.prefix.__str__()+ self.symbol.__str__()
+
+    def plot_symbol(self):
+        return "${0}$".format(self.alternate_prefix.__str__()+self.alternate_symbol._symbol_with_powers())
     
     def _has_alternate_symbol(self):
         return not (self.alternate_symbol == self.symbol)
@@ -114,7 +117,7 @@ class Unit:
             self.alternate_prefix**exponent)
         return NotImplemented  
     
-    def convert_prefix_to(self,prefix):
+    def convert_prefix_to(self,prefix:str):
         return Unit(self.symbol,self.dimension,self.alternate_prefix.convert_to(prefix)*self.prefix_ratio,self.alternate_symbol,self.alternate_prefix.convert_to(prefix))
 
     @staticmethod
@@ -137,7 +140,35 @@ class Unit:
             return "({0})".format(product[1:])
     
     @staticmethod
-    def _write_quotient(numerator_list:str,denominator_list:str):
+    def _write_product_with_powers_symbol(product_list:list):
+        powers_list = [(x,product_list.count(x)) for x in set(product_list)]
+        product = ""
+        for symbol,power in powers_list:
+            if power == 1:
+                product += "*{0}".format(symbol,power)
+            else:
+                product += "*{0}^{1}".format(symbol,power)
+        if len(powers_list) == 0:
+            return product
+        if len(powers_list) == 1:
+            return product[1:]
+        else:
+            return "({0})".format(product[1:])
+    
+    @staticmethod
+    def _write_quotient_with_powers(numerator_list:list,denominator_list:list):
+        numerator_str = Unit._write_product_with_powers_symbol(numerator_list)
+        denominator_str = Unit._write_product_with_powers_symbol(denominator_list)
+        if len(denominator_list) == 0:
+            str = "{0}".format(numerator_str)
+        elif len(numerator_list) == 0:
+            str = "1/{0}".format(denominator_str)
+        else:
+            str = "{0}/{1}".format(numerator_str,denominator_str)
+        return str
+    
+    @staticmethod
+    def _write_quotient(numerator_list:list,denominator_list:list):
         numerator_str = Unit._write_product_symbol(numerator_list)
         denominator_str = Unit._write_product_symbol(denominator_list)
         if len(denominator_list) == 0:
@@ -180,6 +211,7 @@ class Unit:
             self.numerator = numerator
             self.denominator = denominator
             self.symbol = Unit._write_quotient(numerator,denominator)
+            self.symbol_with_powers = Unit._write_quotient_with_powers(numerator,denominator)
        
         def __eq__(self, other) -> bool:
             if isinstance(other,Unit.Symbol):
@@ -192,6 +224,9 @@ class Unit:
         
         def __str__(self) -> str:
             return "{0}".format(self.symbol)
+        
+        def _symbol_with_powers(self):
+            return "{0}".format(self.symbol_with_powers)
         
         def __mul__(self, other):
             if isinstance(other, Unit.Symbol):

@@ -66,8 +66,7 @@ class Measured:
                 return Measured.Array(self.value/other.values,self.unit/other.unit)
             elif isinstance(other, (int, float)):
                 return Measured.Quantity(self.value / other,self.unit)
-            else:
-                return NotImplemented
+            return NotImplemented
         
         def __rtruediv__(self,other):
             if isinstance(other, Measured.Quantity):
@@ -76,9 +75,14 @@ class Measured:
                 return Measured.Array(other.values/self.value,other.unit/self.unit)
             elif isinstance(other, (int, float)):
                 return Measured.Quantity(other / self.value,1/self.unit)
-            else:
-                return NotImplemented
+            return NotImplemented
         
+        def __pow__(self,exponent):
+            if isinstance(exponent,int):
+                return Measured.Quantity(self.value**exponent,self.unit**exponent)
+            return NotImplemented
+
+
         def __str__(self):
             return str(self.value)+self.unit.__str__()
         
@@ -139,7 +143,7 @@ class Measured:
             elif isinstance(other, Measured.Quantity):
                 return Measured.Array(self.values * other.value,self.unit*other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Quantity(self.values * other,self.unit)
+                return Measured.Array(self.values * other,self.unit)
             return NotImplemented
 
         def __rmul__(self, other):
@@ -148,27 +152,31 @@ class Measured:
             elif isinstance(other, Measured.Quantity):
                 return Measured.Array(self.values * other.value,self.unit*other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Quantity(self.values * other,self.unit)
+                return Measured.Array(self.values * other,self.unit)
             return NotImplemented
         
         def __truediv__(self, other):
             if isinstance(other, Measured.Array):
                 return Measured.Array(self.values / other.values,self.unit/other.unit)
             elif isinstance(other, Measured.Quantity):
-                return Measured.Quantity(self.values / other.value,self.unit/other.unit)
+                return Measured.Array(self.values / other.value,self.unit/other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Quantity(self.values / other,self.unit)
+                return Measured.Array(self.values / other,self.unit)
             return NotImplemented
         
         def __rtruediv__(self,other):
             if isinstance(other, Measured.Quantity):
-                return Measured.Quantity(other.value / self.values,other.unit/self.unit)
+                return Measured.Array(other.value / self.values,other.unit/self.unit)
             elif isinstance(other,Measured.Array):
                 return Measured.Array(other.values/self.values,other.unit/self.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Quantity(other / self.values,1/self.unit)
-            else:
-                return NotImplemented
+                return Measured.Array(other / self.values,1/self.unit)
+            return NotImplemented
+        
+        def __pow__(self,exponent):
+            if isinstance(exponent,int):
+                return Measured.Array(self.values**exponent,self.unit**exponent)
+            return NotImplemented
         
         def __str__(self):
             return str(self.values)+self.unit.__str__()
@@ -198,15 +206,16 @@ class Measured:
             x = getattr(self,x_key)
             y = getattr(self,y_key)
             plt.plot(x.values,y.values,**kwargs)
-            plt.xlabel(x_key + " ({0})".format(x.unit.full_symbol()))
-            plt.ylabel(y_key + " ({0})".format(y.unit.full_symbol()))
+            plt.xlabel(x_key + " ({0})".format(x.unit.plot_symbol()))
+            plt.ylabel(y_key + " ({0})".format(y.unit.plot_symbol()))
     
     
 # from svt import SI
-# a = Measured.Quantity(3,SI.meter())
+# a = Measured.Quantity(3,SI.meter().convert_prefix_to("m"))
 # b = Measured.Quantity(4,SI.newton())
-# c = Measured.Array(np.linspace(1,2),SI.meter())
-# d = Measured.Array(np.linspace(1,2),SI.newton())
+# c = Measured.Array(np.linspace(1,2),SI.celsius())
+# d = Measured.Array(np.linspace(1,2),SI.newton())/a**2
+# print(type(d))
 # dc = Measured.DataCollection(x=c,y=d)
 # import matplotlib
 # matplotlib.use('TkAgg')

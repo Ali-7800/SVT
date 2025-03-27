@@ -51,7 +51,7 @@ class SI:
     
     @staticmethod
     def volt():
-        return Unit(symbol = Unit.Symbol(["Kg","m","m"],["s","s","s","A"]),
+        return Unit(symbol = Unit.Symbol(["g","m","m"],["s","s","s","A"]),
                     dimension = Unit.Dimension(["mass","length","length"],3*["time"]+["current"]),
                     prefix= Unit.Prefix("k"),
                     alternate_symbol= Unit.Symbol(["V"]),
