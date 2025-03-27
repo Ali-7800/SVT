@@ -3,7 +3,7 @@ import os
 import pickle
 from svt._check import Check
 
-class DataFile:
+class SceneDataFile:
     def __init__(self,name:str,times:np.ndarray):
         self.name = name
         self.times = times
@@ -93,7 +93,7 @@ class DataFile:
         pass
 
 
-class PovraySceneDataFile(DataFile):
+class PovraySceneDataFile(SceneDataFile):
     def __init__(self, name:str, times:np.ndarray):
         DataFile.__init__(self,name,times)
 
@@ -185,7 +185,7 @@ class PovraySceneDataFile(DataFile):
 
         return data
 
-class ThreeJSSceneDataFile(DataFile):
+class ThreeJSSceneDataFile(SceneDataFile):
     def __init__(self, name:str, time:np.ndarray):
         DataFile.__init__(self,name,time)
     #TODO:finish implementing this
