@@ -6,146 +6,83 @@ import numpy as np
 from svt._check import Check
 
 class Unit:
-    """
-    The Unit class defines a physical unit that is used for tracking operations involving measured physical quantaties.
-
-    Parameters
-    ----------
-    symbol: str
-        the unit's symbol
-    prefix: str
-        the unit's prefix (if any), should be an SI prefix. Use Unit.SI_prefixes() for valid prefix list.
-    numerator_dimensions: list
-        list of numerator dimensions, each dimension should be a str. Use Unit.valid_dimensions() for valid dimension list.
-    denominator_dimensions: list
-        list of denominator dimensions, each dimension should be a str. Use Unit.valid_dimensions() for valid dimension list.
-
-    Attributes
-    ----------
-    symbol: str
-        the unit's symbol
-    numerator_dimensions: list
-        list of numerator dimensions, for tracking the unit's dimension.
-    denominator_dimensions: list
-        list of denominator dimensions, for tracking the unit's dimension.
-    SI_prefix: str
-        the unit's SI prefix.
-    SI_power: int
-        the power associated with the unit's SI prefix
-    power: int
-        the unit's power, this is for tracking when the unit is converted to another prefix.
-    multiplier: int
-        this is what is multipled with the data when the associated unit is converted to another prefix.
-
-    Methods
-    -------
-    full_symbol: 
-        returns str with the unit's symbol and prefix
-    dimension:
-        returns str with the unit's dimension
-    convert_to:
-        converts unit into given prefix
-    copy:
-        returns a copy of the unit
-    with_prefix:
-        returns a copy of the unit with a different prefix
-    _simplify:
-        static method for simplifying the unit's dimension
-    _write_symbol:
-        static method for writing a symbol from two lists of strings
-    SI_prefixes:
-        static method that returns SI prefixes
-    SI_powers:
-        static method that returns SI powers
-    valid_dimensions:
-        static method that returns valid dimensions for the unit
-    _find_SI_power_index:
-        return the index in Unit.SI_powers() for a given power
-    _find_SI_prefix_index:
-        return the index in Unit.SI_prefixes() for a given prefixes
-
-    """
     def __init__(
         self,
-        symbol:str,
-        prefix = "",
-        numerator_dimensions = [],
-        denominator_dimensions = [],
-        ) -> None:
+        symbol,
+        dimension,
+        prefix,
+        alternate_symbol=None,
+        alternate_prefix=None) -> None:
+
+        Check.object_class(symbol,Unit.Symbol,"Symbol")
         self.symbol = symbol
-        self.numerator_dimensions = numerator_dimensions
-        self.denominator_dimensions = denominator_dimensions
-        for dimension in self.numerator_dimensions:
-            Check.validity(dimension,"Numerator dimensions",self.valid_dimensions())
-        for dimension in self.denominator_dimensions:
-            Check.validity(dimension,"Denominator dimensions",self.valid_dimensions())
+        self.alternate_symbol = symbol
+        Check.object_class(dimension,Unit.Dimension,"Dimension")
+        self.dimension = dimension
+        Check.object_class(prefix,Unit.Prefix,"Prefix")
+        self.prefix = prefix
+        self.alternate_prefix = prefix
+        
+        if alternate_symbol is not None:
+            Check.object_class(alternate_symbol,Unit.Symbol,"Alternate Symbol")
+            self.alternate_symbol = alternate_symbol
+        if alternate_prefix is not None:
+            Check.object_class(alternate_prefix,Unit.Prefix,"Alternate Prefix")
+            self.alternate_prefix = alternate_prefix
+        
+        self.prefix_ratio = self.prefix/self.alternate_prefix
+        
+    
+    def __eq__(self, other) -> bool:
+        if isinstance(other,Unit):
+            return ((self.symbol == other.symbol) and (self.dimension == other.dimension) and (self.prefix == other.prefix))
+        else:
+            False
 
-        self._simplify(self.denominator_dimensions,self.numerator_dimensions)
-        Check.validity(prefix,"prefix",self.SI_prefixes())
-        self.SI_prefix = prefix
-        self.SI_power = self.SI_powers()[self._find_SI_prefix_index(prefix)]
-        self.power = self.SI_power
-        self.multiplier = 1
-
+    def __str__(self):
+        return self.alternate_prefix.__str__()+ self.alternate_symbol.__str__()
+    
     def full_symbol(self):
-        try:
-            return self.SI_prefix + self.derived_symbol
-        except:
-            return self.SI_prefix + self.symbol
-        
-    def dimension(self):
-        return self._write_symbol(self.numerator_dimensions,self.denominator_dimensions)
-        
-    def convert_to(self,prefix:str):
-        Check.validity(prefix,"SI prefix",self.SI_prefixes())
-        self.SI_prefix = prefix
-        self.SI_power = self.SI_powers()[self._find_SI_prefix_index(prefix)]
-        self.multiplier *= 10.0**(self.power-self.SI_power)
-        self.power = self.SI_power
-    
-    def copy(self):
-        #this method returns a new unit that is a copy of the current class
-        new_unit = Unit(self.symbol,self.SI_prefix,self.numerator_dimensions,self.denominator_dimensions)
-        try:
-            new_unit.derived_symbol = self.derived_symbol
-        except AttributeError:
-            pass
-        return new_unit
-    
-    def with_prefix(self,new_prefix):
-        #this method returns a new unit with same symbol as the class instance but with a new power that is the same as the prefix
-        Check.validity(new_prefix,"SI prefix",self.SI_prefixes())
-        new_unit = Unit(self.symbol,new_prefix,self.numerator_dimensions,self.denominator_dimensions)
-        try:
-            new_unit.derived_symbol = self.derived_symbol
-        except AttributeError:
-            pass
-        return new_unit
+        return self.prefix.__str__()+ self.symbol.__str__()
 
     def __mul__(self, other):
         if isinstance(other, Unit):
-            return DerivedUnit([self,other])
+            return Unit(self.symbol*other.symbol,
+                        self.dimension*other.dimension,
+                        self.prefix*other.prefix,
+                        self.alternate_symbol*other.alternate_symbol,
+                        self.alternate_prefix*other.alternate_prefix)
         return NotImplemented
     
     def __rmul__(self,other):
         if isinstance(other, Unit):
-            return DerivedUnit([other,self])
+            return Unit(other.symbol*self.symbol,
+                        other.dimension*self.dimension,
+                        other.prefix*self.prefix,
+                        self.alternate_symbol*other.alternate_symbol,
+                        self.alternate_prefix*other.alternate_prefix)
         return NotImplemented
     
     def __truediv__(self, other):
         if isinstance(other, Unit):
-            return DerivedUnit([self],[other])
+            return Unit(self.symbol/other.symbol,
+                        self.dimension/other.dimension,
+                        self.prefix/other.prefix,
+                        self.alternate_symbol/other.alternate_symbol,
+                        self.alternate_prefix/other.alternate_prefix)
         return NotImplemented
 
     def __rtruediv__(self, other):
         if isinstance(other, Unit):
-            return DerivedUnit([other],[self])
-        if other == 1:
-            return DerivedUnit([],[self])
+            return Unit(other.symbol/self.symbol,
+                        other.dimension/self.dimension,
+                        other.prefix/self.prefix,
+                        self.alternate_symbol/other.alternate_symbol,
+                        self.alternate_prefix/other.alternate_prefix)
         return NotImplemented
     
-    def __str__(self):
-        return self.full_symbol()
+    def convert_prefix_to(self,prefix):
+        return Unit(self.symbol,self.dimension,self.prefix.convert_to(prefix)*self.prefix_ratio,self.alternate_symbol,self.prefix.convert_to(prefix))
     
     @staticmethod
     def _simplify(numerator:list,denominator:list):
@@ -155,100 +92,210 @@ class Unit:
             denominator.remove(common_dimension)
     
     @staticmethod
-    def _write_symbol(numerator:list,denominator:list):
-        numerator_str = ""
-        denominator_str = ""
-        for i in numerator:
-            if i != "()":
-                numerator_str += "*{0}".format(i)
-        for i in denominator:
-            if i != "()":
-                denominator_str += "*{0}".format(i)
-        
-        if (denominator_str == ""):
-            symbol = "({0})".format(numerator_str[1:])
-        elif numerator_str == "":
-            symbol = "[1/({0})]".format(denominator_str[1:])
+    def _write_product_symbol(product_list:list):
+        product = ""
+        for i in product_list:
+            product += "*{0}".format(i)
+        if len(product_list) == 0:
+            return product
+        if len(product_list) == 1:
+            return product[1:]
         else:
-            symbol = "({0})/({1})".format(numerator_str[1:],denominator_str[1:])
-        return symbol
+            return "({0})".format(product[1:])
     
     @staticmethod
-    def SI_prefixes():
-        return ["q","r","y","z","a","f","p","n","µ","m","c","d","","da","h","k","M","G","T","P","E","Z","Y","R","Q"]
-    
-    @staticmethod
-    def SI_powers():
-        return np.array([-30,-27,-24,-21,-18,-15,-12,-9,-6,-3,-2,-1,0,1,2,3,6,9,12,15,18,21,24,27,30])
-    
-    @staticmethod
-    def valid_dimensions():
-        return ["length","mass","time","temperature","current","amount","luminousity"]
-    
-    @staticmethod
-    def _find_SI_power_index(power:int):
-        Check.validity(power,"power",Unit.SI_powers())
-        return np.argmin(abs((power-Unit.SI_powers())))
-    
-    @staticmethod
-    def _find_SI_prefix_index(prefix:str):
-        Check.validity(prefix,"prefix",Unit.SI_prefixes())
-        return Unit.SI_prefixes().index(prefix)
+    def _write_quotient(numerator_list:str,denominator_list:str):
+        numerator_str = Unit._write_product_symbol(numerator_list)
+        denominator_str = Unit._write_product_symbol(denominator_list)
+        if len(denominator_list) == 0:
+            str = "{0}".format(numerator_str)
+        elif len(numerator_list) == 0:
+            str = "1/{0}".format(denominator_str)
+        else:
+            str = "{0}/{1}".format(numerator_str,denominator_str)
+        return str
 
-class DerivedUnit(Unit):
-    def __init__(
-        self,
-        numerator_unit_list=[],
-        denominator_unit_list=[],
-        derived_symbol=None,
-        default_prefix = "",
-        ) -> None:
-        numerator_power = 0
-        numerator_symbols = []
-        numerator_dimensions = []
-
-        denominator_power = 0
-        denominator_symbols = []
-        denominator_dimensions = []
-
-        Check.object_class(numerator_unit_list,list,"numerator_unit_list")
-        Check.object_class(denominator_unit_list,list,"denominator_unit_list")
-        Check.condition(len(numerator_unit_list)>0 or len(denominator_unit_list)>0,ValueError,"There must be at least one unit in the one of the unit lists")
-
-        for unit in numerator_unit_list:
-            #check if all list objects are units
-            Check.object_class(unit,Unit,"unit",error_msg="At least one of the objects in the numerator unit list is not a unit, please use the Unit class to derive units")
-            numerator_power += unit.power
-            try:
-                if unit.derived_symbol is not None:
-                    numerator_symbols.append(unit.derived_symbol)
-                else:
-                    numerator_symbols.append(unit.symbol)
-            except AttributeError:
-                numerator_symbols.append(unit.symbol)
-            numerator_dimensions+=unit.numerator_dimensions
-            denominator_dimensions+=unit.denominator_dimensions
+    class Symbol:
+        def __init__(
+            self,
+            numerator=[],
+            denominator=[],
+            ) -> None:
+            Check.object_class(numerator,list,"Numerator symbols")
+            Check.object_class(denominator,list,"Denominator symbols")
+            for i in numerator:
+                Check.object_class(i,str,"Numerator symbols")
+            for i in denominator:
+                Check.object_class(i,str,"Denominator symbols")
+            Unit._simplify(numerator,denominator)
+            self.numerator = numerator
+            self.denominator = denominator
+            self.symbol = Unit._write_quotient(numerator,denominator)
+       
+        def __eq__(self, other) -> bool:
+            if isinstance(other,Unit.Symbol):
+                return (sorted(self.numerator) == sorted(other.numerator)) and (sorted(self.denominator) == sorted(other.denominator))
+            else:
+                False
         
-        for unit in denominator_unit_list:
-            #check if all list objects are units
-            Check.object_class(unit,Unit,"unit",error_msg="At least one of the objects in the denominator unit list is not a unit, please use the Unit class to derive units")
-            denominator_power += unit.power
-            try:
-                if unit.derived_symbol is not None:
-                    denominator_symbols.append(unit.derived_symbol)
-                else:
-                    denominator_symbols.append(unit.symbol)
-            except AttributeError:
-                denominator_symbols.append(unit.symbol)
-            numerator_dimensions+=unit.denominator_dimensions
-            denominator_dimensions+=unit.numerator_dimensions
+        def __str__(self) -> str:
+            return "{0}".format(self.symbol)
+        
+        def __mul__(self, other):
+            if isinstance(other, Unit.Symbol):
+                return Unit.Symbol(self.numerator+other.numerator,self.denominator+other.denominator)
+            return NotImplemented
+        
+        def __rmul__(self,other):
+            if isinstance(other, Unit.Symbol):
+                return Unit.Symbol(self.numerator+other.numerator,self.denominator+other.denominator)
+            return NotImplemented
+        
+        def __truediv__(self, other):
+            if isinstance(other, Unit.Symbol):
+                return Unit.Symbol(self.numerator+other.denominator,self.denominator+other.numerator)
+            return NotImplemented
 
-        Check.validity(default_prefix,"SI prefix",Unit.SI_prefixes())
-        default_power = Unit.SI_powers()[Unit.SI_prefixes().index(default_prefix)]
-        Unit._simplify(numerator_symbols,denominator_symbols)
-        symbol = Unit._write_symbol(numerator_symbols,denominator_symbols)
-        SI_power = Unit.SI_powers()[Unit._find_SI_power_index(numerator_power-denominator_power-default_power)]
-        prefix = Unit.SI_prefixes()[Unit._find_SI_power_index(numerator_power-denominator_power-default_power)]
-        super().__init__(symbol, prefix= prefix,numerator_dimensions=numerator_dimensions,denominator_dimensions=denominator_dimensions)
-        self.multiplier *= 10.0**(default_power-SI_power)
-        self.derived_symbol = derived_symbol
+        def __rtruediv__(self, other):
+            if isinstance(other, Unit.Symbol):
+                return Unit.Symbol(self.denominator+other.numerator,self.numerator+other.denominator)
+            return NotImplemented
+            
+    class Dimension(Symbol):
+        def __init__(
+                    self,
+                    numerator=[],
+                    denominator=[],) -> None:
+            Check.object_class(numerator,list,"Numerator dimension list")
+            Check.object_class(denominator,list,"Denominator dimension list")
+            for dimension in numerator:
+                Check.validity(dimension,"Numerator dimensions",self.valid_dimensions())
+            for dimension in denominator:
+                Check.validity(dimension,"Denominator dimensions",self.valid_dimensions())
+            Unit.Symbol.__init__(self,numerator,denominator)
+        
+        def __mul__(self, other):
+            if isinstance(other, Unit.Dimension):
+                return Unit.Dimension(self.numerator+other.numerator,self.denominator+other.denominator)
+            return NotImplemented
+        
+        def __rmul__(self,other):
+            if isinstance(other, Unit.Dimension):
+                return Unit.Dimension(self.numerator+other.numerator,self.denominator+other.denominator)
+            return NotImplemented
+        
+        def __truediv__(self, other):
+            if isinstance(other, Unit.Dimension):
+                return Unit.Dimension(self.numerator+other.denominator,self.denominator+other.numerator)
+            return NotImplemented
+
+        def __rtruediv__(self, other):
+            if isinstance(other, Unit.Dimension):
+                return Unit.Dimension(self.denominator+other.numerator,self.numerator+other.denominator)
+            return NotImplemented
+        
+        @staticmethod
+        def valid_dimensions():
+            return ["length","mass","time","temperature","current","amount","luminousity"]
+    
+    class Prefix:
+        def __init__(
+            self,
+            symbol:str,
+            power=None,) -> None:
+            Check.validity(symbol,"SI prefix",self.SI_prefixes())
+            self.symbol = symbol
+            self.SI_power = self.SI_powers()[self._find_SI_prefix_index(symbol)]
+            if power is None:
+                self.power = self.SI_power
+            else:
+                self.power = power
+            self.multiplier = 10.0**(self.power-self.SI_power)
+
+        def __str__(self):
+            if self.multiplier == 1.0:
+                return self.symbol
+            else:
+                return str(self.multiplier)+self.symbol
+
+        def __eq__(self, other):
+            """Defines behavior for the equality operator (==)."""
+            if isinstance(other, Unit.Prefix):
+                return self.power == other.power
+            return False
+
+        def __ne__(self, other):
+            """Defines behavior for the inequality operator (!=)."""
+            return not self.__eq__(other)
+
+        def __lt__(self, other):
+            """Defines behavior for the less-than operator (<)."""
+            if isinstance(other, Unit.Prefix):
+                return self.power < other.power
+            return NotImplemented
+
+        def __gt__(self, other):
+            """Defines behavior for the greater-than operator (>)."""
+            if isinstance(other, Unit.Prefix):
+                return self.power > other.power
+            return NotImplemented
+
+        def __le__(self, other):
+            """Defines behavior for the less-than-or-equal-to operator (<=)."""
+            if isinstance(other, Unit.Prefix):
+                return self.power <= other.power
+            return NotImplemented
+
+        def __ge__(self, other):
+            """Defines behavior for the greater-than-or-equal-to operator (>=)."""
+            if isinstance(other, Unit.Prefix):
+                return self.power >= other.power
+            return NotImplemented
+
+        def __mul__(self, other):
+            if isinstance(other, Unit.Prefix):
+                new_power = self.power+other.power
+                new_symbol = self.SI_prefixes()[self._find_closest_SI_power_index(new_power)]
+                return Unit.Prefix(new_symbol,new_power)
+            return NotImplemented
+        
+        def __rmul__(self,other):
+            if isinstance(other, Unit.Prefix):
+                new_power = self.power+other.power
+                new_symbol = self.SI_prefixes()[self._find_closest_SI_power_index(new_power)]
+                return Unit.Prefix(new_symbol,new_power)
+            return NotImplemented
+        
+        def __truediv__(self, other):
+            if isinstance(other, Unit.Prefix):
+                new_power = self.power-other.power
+                new_symbol = self.SI_prefixes()[self._find_closest_SI_power_index(new_power)]
+                return Unit.Prefix(new_symbol,new_power)
+            return NotImplemented
+
+        def __rtruediv__(self, other):
+            if isinstance(other, Unit.Prefix):
+                new_power = other.power-self.power
+                new_symbol = self.SI_prefixes()[self._find_closest_SI_power_index(new_power)]
+            return Unit.Prefix(new_symbol,new_power)
+        
+        def convert_to(self,prefix:str):
+            Check.validity(prefix,"SI prefix",self.SI_prefixes())
+            return Unit.Prefix(prefix,self.power)
+        
+        @staticmethod
+        def SI_prefixes():
+            return ["q","r","y","z","a","f","p","n","µ","m","c","d","","da","h","k","M","G","T","P","E","Z","Y","R","Q"]
+
+        @staticmethod
+        def SI_powers():
+            return np.array([-30,-27,-24,-21,-18,-15,-12,-9,-6,-3,-2,-1,0,1,2,3,6,9,12,15,18,21,24,27,30])
+
+        @staticmethod
+        def _find_closest_SI_power_index(power:int):
+            return np.argmin(abs((power-Unit.Prefix.SI_powers())))
+
+        @staticmethod
+        def _find_SI_prefix_index(prefix:str):
+            Check.validity(prefix,"prefix",Unit.Prefix.SI_prefixes())
+            return Unit.Prefix.SI_prefixes().index(prefix)

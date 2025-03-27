@@ -1,5 +1,5 @@
 import numpy as np
-from svt.units import Unit,DerivedUnit
+from svt.units import Unit
 from svt._check import Check
 from typing import Union
 import matplotlib.pyplot as plt
@@ -194,3 +194,15 @@ class Measured:
             plt.plot(x.values,y.values,**kwargs)
             plt.xlabel(x_key + " ({0})".format(x.unit.full_symbol()))
             plt.ylabel(y_key + " ({0})".format(y.unit.full_symbol()))
+    
+    
+from svt import SI
+a = Measured.Variable(3,SI.meter())
+b = Measured.Variable(4,SI.newton())
+c = Measured.Array(np.linspace(1,2),SI.meter())
+d = Measured.Array(np.linspace(1,2),SI.newton())
+dc = Measured.DataCollection(x=c,y=d)
+import matplotlib
+matplotlib.use('TkAgg')
+dc.plot2D("x","y")
+plt.show()

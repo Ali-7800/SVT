@@ -1,71 +1,94 @@
 from svt.units import (
-    Unit,
-    DerivedUnit,
+    Unit
 )
 
 class SI:
     """ 
-        This is a class for storing SI untis
+    This is a class for storing and defining SI units
     """
     def __init__(self) -> None:
-        pass 
-    
+        pass
+
     @staticmethod
     def meter():
-        return Unit("m",numerator_dimensions=["length"])
+        return Unit(symbol = Unit.Symbol(["m"]),dimension = Unit.Dimension(["length"]),prefix= Unit.Prefix(""))
     
     @staticmethod
     def second():
-        return Unit("s",numerator_dimensions=["time"])
+        return Unit(symbol = Unit.Symbol(["s"]),dimension = Unit.Dimension(["time"]),prefix= Unit.Prefix(""))
     
     @staticmethod
     def hertz():
-        return Unit("Hz",denominator_dimensions=["time"])
+        return Unit(symbol = Unit.Symbol([],["s"]),dimension = Unit.Dimension([],["time"]),prefix= Unit.Prefix(""),alternate_symbol= Unit.Symbol(["Hz"]))
     
     @staticmethod
     def kilogram():
-        return Unit("g",prefix="k",numerator_dimensions=["mass"])
+        return Unit(symbol = Unit.Symbol(["g"]),dimension = Unit.Dimension(["mass"]),prefix= Unit.Prefix("k"))
     
     @staticmethod
     def celsius():
-        return Unit("°C",numerator_dimensions=["temperature"])
+        return Unit(symbol = Unit.Symbol(["°C"]),dimension = Unit.Dimension(["temperature"]),prefix= Unit.Prefix(""))
     
     @staticmethod
     def kelvin():
-        return Unit("K",numerator_dimensions=["temperature"])
+        return Unit(symbol = Unit.Symbol(["K"]),dimension = Unit.Dimension(["temperature"]),prefix= Unit.Prefix(""))
     
     @staticmethod
     def ampere():
-        return Unit("A",numerator_dimensions=["current"])
+        return Unit(symbol = Unit.Symbol(["A"]),dimension = Unit.Dimension(["current"]),prefix= Unit.Prefix(""))
     
     @staticmethod
     def mole():
-        return Unit("mol",numerator_dimensions=["amount"])
+        return Unit(symbol = Unit.Symbol(["mol"]),dimension = Unit.Dimension(["amount"]),prefix= Unit.Prefix(""))
     
     @staticmethod
     def candela():
-        return Unit("cd",numerator_dimensions=["luminousity"])
+        return Unit(symbol = Unit.Symbol(["cd"]),dimension = Unit.Dimension(["luminousity"]),prefix= Unit.Prefix(""))
     
     @staticmethod
     def coloumb():
-        return DerivedUnit([SI.ampere(),SI.second()],derived_symbol="C")
+        return Unit(symbol = Unit.Symbol(["A","s"]),dimension = Unit.Dimension(["current","time"]),prefix= Unit.Prefix(""),alternate_symbol= Unit.Symbol(["C"]))
     
     @staticmethod
     def volt():
-        return DerivedUnit([SI.kilogram()]+2*[SI.meter()],3*[SI.second()]+[SI.ampere()],derived_symbol="V",default_prefix="k")
+        return Unit(symbol = Unit.Symbol(["Kg","m","m"],["s","s","s","A"]),
+                    dimension = Unit.Dimension(["mass","length","length"],3*["time"]+["current"]),
+                    prefix= Unit.Prefix("k"),
+                    alternate_symbol= Unit.Symbol(["V"]),
+                    alternate_prefix = Unit.Prefix(""))
     
     @staticmethod
     def newton():
-        return DerivedUnit([SI.kilogram(),SI.meter()],2*[SI.second()],derived_symbol="N",default_prefix="k")
+        return Unit(symbol = Unit.Symbol(["m","g"],2*["s"]),
+                    dimension = Unit.Dimension(["length","mass"],2*["time"]),
+                    prefix= Unit.Prefix("k"),
+                    alternate_symbol = Unit.Symbol(["N"]),
+                    alternate_prefix = Unit.Prefix(""),
+                    )
     
     @staticmethod
     def joule():
-        return DerivedUnit([SI.newton(),SI.meter()],derived_symbol="J")
+        return Unit(symbol = Unit.Symbol(["m","m","g"],2*["s"]),
+                    dimension = Unit.Dimension(["length","length","mass"],2*["time"]),
+                    prefix= Unit.Prefix("k"),
+                    alternate_symbol = Unit.Symbol(["J"]),
+                    alternate_prefix = Unit.Prefix(""),
+                    )
     
     @staticmethod
     def watt():
-        return DerivedUnit([SI.joule()],[SI.second()],derived_symbol="W")
+        return Unit(symbol = Unit.Symbol(["m","m","g"],3*["s"]),
+                    dimension = Unit.Dimension(["length","length","mass"],3*["time"]),
+                    prefix= Unit.Prefix("k"),
+                    alternate_symbol = Unit.Symbol(["W"]),
+                    alternate_prefix = Unit.Prefix(""),
+                    )
     
     @staticmethod
     def pascal():
-        return DerivedUnit([SI.newton()],2*[SI.meter()],derived_symbol="Pa")
+        return Unit(symbol = Unit.Symbol(["m","g"],2*["s","m"]),
+                    dimension = Unit.Dimension(["length","mass"],2*["time","length"]),
+                    prefix= Unit.Prefix("k"),
+                    alternate_symbol = Unit.Symbol(["Pa"]),
+                    alternate_prefix = Unit.Prefix(""),
+                    )

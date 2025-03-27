@@ -14,7 +14,6 @@ from svt.appearence import (
 )
 from svt.units import (
     Unit,
-    DerivedUnit,
 )
 from _check import (
     Check
