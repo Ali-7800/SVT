@@ -95,7 +95,7 @@ class Unit:
         
     def dimension(self):
         return self._write_symbol(self.numerator_dimensions,self.denominator_dimensions)
-    
+        
     def convert_to(self,prefix:str):
         Check.validity(prefix,"SI prefix",self.SI_prefixes())
         self.SI_prefix = prefix
@@ -121,6 +121,31 @@ class Unit:
         except AttributeError:
             pass
         return new_unit
+
+    def __mul__(self, other):
+        if isinstance(other, Unit):
+            return DerivedUnit([self,other])
+        return NotImplemented
+    
+    def __rmul__(self,other):
+        if isinstance(other, Unit):
+            return DerivedUnit([other,self])
+        return NotImplemented
+    
+    def __truediv__(self, other):
+        if isinstance(other, Unit):
+            return DerivedUnit([self],[other])
+        return NotImplemented
+
+    def __rtruediv__(self, other):
+        if isinstance(other, Unit):
+            return DerivedUnit([other],[self])
+        if other == 1:
+            return DerivedUnit([],[self])
+        return NotImplemented
+    
+    def __str__(self):
+        return self.full_symbol()
     
     @staticmethod
     def _simplify(numerator:list,denominator:list):
@@ -134,11 +159,13 @@ class Unit:
         numerator_str = ""
         denominator_str = ""
         for i in numerator:
-            numerator_str += "*{0}".format(i)
+            if i != "()":
+                numerator_str += "*{0}".format(i)
         for i in denominator:
-            denominator_str += "*{0}".format(i)
+            if i != "()":
+                denominator_str += "*{0}".format(i)
         
-        if denominator_str == "":
+        if (denominator_str == ""):
             symbol = "({0})".format(numerator_str[1:])
         elif numerator_str == "":
             symbol = "[1/({0})]".format(denominator_str[1:])
@@ -167,8 +194,6 @@ class Unit:
     def _find_SI_prefix_index(prefix:str):
         Check.validity(prefix,"prefix",Unit.SI_prefixes())
         return Unit.SI_prefixes().index(prefix)
-    
-
 
 class DerivedUnit(Unit):
     def __init__(
@@ -194,7 +219,13 @@ class DerivedUnit(Unit):
             #check if all list objects are units
             Check.object_class(unit,Unit,"unit",error_msg="At least one of the objects in the numerator unit list is not a unit, please use the Unit class to derive units")
             numerator_power += unit.power
-            numerator_symbols.append(unit.symbol)
+            try:
+                if unit.derived_symbol is not None:
+                    numerator_symbols.append(unit.derived_symbol)
+                else:
+                    numerator_symbols.append(unit.symbol)
+            except AttributeError:
+                numerator_symbols.append(unit.symbol)
             numerator_dimensions+=unit.numerator_dimensions
             denominator_dimensions+=unit.denominator_dimensions
         
@@ -202,7 +233,13 @@ class DerivedUnit(Unit):
             #check if all list objects are units
             Check.object_class(unit,Unit,"unit",error_msg="At least one of the objects in the denominator unit list is not a unit, please use the Unit class to derive units")
             denominator_power += unit.power
-            denominator_symbols.append(unit.symbol)
+            try:
+                if unit.derived_symbol is not None:
+                    denominator_symbols.append(unit.derived_symbol)
+                else:
+                    denominator_symbols.append(unit.symbol)
+            except AttributeError:
+                denominator_symbols.append(unit.symbol)
             numerator_dimensions+=unit.denominator_dimensions
             denominator_dimensions+=unit.numerator_dimensions
 
