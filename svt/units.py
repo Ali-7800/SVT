@@ -31,20 +31,37 @@ class Unit:
             self.alternate_prefix = alternate_prefix
         
         self.prefix_ratio = self.prefix/self.alternate_prefix
-        
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other):
         if isinstance(other,Unit):
-            return ((self.symbol == other.symbol) and (self.dimension == other.dimension) and (self.prefix == other.prefix))
+            if ((self.symbol == other.symbol) and (self.dimension == other.dimension) and (self.prefix == other.prefix)):
+                return 1
+            elif (self.symbol == other.symbol) and (self.dimension == other.dimension):
+                return 0.5
+            else:
+                return 0
         else:
-            False
+            NotImplemented
 
     def __str__(self):
         return self.alternate_prefix.__str__()+ self.alternate_symbol.__str__()
     
     def full_symbol(self):
         return self.prefix.__str__()+ self.symbol.__str__()
-
+    
+    def _has_alternate_symbol(self):
+        return not (self.alternate_symbol == self.symbol)
+    
+    def _update_prefix(self,new_prefix):
+        if isinstance(new_prefix,Unit.Prefix):
+            multiplier = 10.0**(self.prefix/new_prefix).power
+            return multiplier,Unit(self.symbol,self.dimension,new_prefix,self.alternate_symbol,new_prefix/self.prefix_ratio)
+        NotImplemented
+    
+    def update_prefix(self,new_prefix:str):
+        prefix = self.alternate_prefix.convert_to(new_prefix)
+        return Unit(self.symbol,self.dimension,prefix*self.prefix_ratio,self.alternate_symbol,prefix)
+    
     def __mul__(self, other):
         if isinstance(other, Unit):
             return Unit(self.symbol*other.symbol,
@@ -77,13 +94,29 @@ class Unit:
             return Unit(other.symbol/self.symbol,
                         other.dimension/self.dimension,
                         other.prefix/self.prefix,
-                        self.alternate_symbol/other.alternate_symbol,
-                        self.alternate_prefix/other.alternate_prefix)
+                        other.alternate_symbol/self.alternate_symbol,
+                        other.alternate_prefix/self.alternate_prefix)
+        elif isinstance(other, (int,float)):
+            if (other == 1) or (other == 1.0):
+                return Unit(1/self.symbol,
+                        1/self.dimension,
+                        1/self.prefix,
+                        1/self.alternate_symbol,
+                        1/self.alternate_prefix)
         return NotImplemented
     
-    def convert_prefix_to(self,prefix):
-        return Unit(self.symbol,self.dimension,self.prefix.convert_to(prefix)*self.prefix_ratio,self.alternate_symbol,self.prefix.convert_to(prefix))
+    def __pow__(self, exponent):
+        if isinstance(exponent,int):
+            return Unit(self.symbol**exponent,
+            self.dimension**exponent,
+            self.prefix**exponent,
+            self.alternate_symbol**exponent,
+            self.alternate_prefix**exponent)
+        return NotImplemented  
     
+    def convert_prefix_to(self,prefix):
+        return Unit(self.symbol,self.dimension,self.alternate_prefix.convert_to(prefix)*self.prefix_ratio,self.alternate_symbol,self.alternate_prefix.convert_to(prefix))
+
     @staticmethod
     def _simplify(numerator:list,denominator:list):
         common_elements = list(set(numerator).intersection(denominator))
@@ -114,6 +147,22 @@ class Unit:
         else:
             str = "{0}/{1}".format(numerator_str,denominator_str)
         return str
+    
+    @staticmethod
+    def unify_prefixes(unit_1,unit_2):
+        Check.object_class(unit_1,Unit,"first unit")
+        Check.object_class(unit_2,Unit,"second unit")
+        max_prefix = max(unit_1.prefix,unit_2.prefix)
+        m1,d1 = unit_1._update_prefix(max_prefix)
+        m2,d2 = unit_2._update_prefix(max_prefix)
+        if d1._has_alternate_symbol():
+            new_unit = d1
+            if d2._has_alternate_symbol():
+                if Unit.Symbol._simpler_than(d2.alternate_symbol,d1.alternate_symbol):
+                    new_unit = d2
+        else:
+            new_unit = d2
+        return m1,m2,new_unit
 
     class Symbol:
         def __init__(
@@ -138,6 +187,9 @@ class Unit:
             else:
                 False
         
+        def __len__(self):
+            return len(self.numerator)+len(self.denominator)
+        
         def __str__(self) -> str:
             return "{0}".format(self.symbol)
         
@@ -159,7 +211,22 @@ class Unit:
         def __rtruediv__(self, other):
             if isinstance(other, Unit.Symbol):
                 return Unit.Symbol(self.denominator+other.numerator,self.numerator+other.denominator)
+            elif isinstance(other, (int,float)):
+                if (other == 1) or (other == 1.0):
+                    return Unit.Symbol(self.denominator,self.numerator)
             return NotImplemented
+        
+        def __pow__(self, exponent):
+            if isinstance(exponent,int):
+                return Unit.Symbol(exponent*self.numerator,exponent*self.denominator)
+            return NotImplemented 
+        
+        @staticmethod
+        def _simpler_than(symbol1,symbol2):
+            if len(symbol1)<len(symbol2):
+                return True
+            else:
+                return False
             
     class Dimension(Symbol):
         def __init__(
@@ -192,7 +259,15 @@ class Unit:
         def __rtruediv__(self, other):
             if isinstance(other, Unit.Dimension):
                 return Unit.Dimension(self.denominator+other.numerator,self.numerator+other.denominator)
+            elif isinstance(other, (int,float)):
+                if (other == 1) or (other == 1.0):
+                    return Unit.Dimension(self.denominator,self.numerator)
             return NotImplemented
+        
+        def __pow__(self, exponent):
+            if isinstance(exponent,int):
+                return Unit.Dimension(exponent*self.numerator,exponent*self.denominator)
+            return NotImplemented  
         
         @staticmethod
         def valid_dimensions():
@@ -277,7 +352,20 @@ class Unit:
             if isinstance(other, Unit.Prefix):
                 new_power = other.power-self.power
                 new_symbol = self.SI_prefixes()[self._find_closest_SI_power_index(new_power)]
-            return Unit.Prefix(new_symbol,new_power)
+                return Unit.Prefix(new_symbol,new_power)
+            elif isinstance(other, (int,float)):
+                if (other == 1) or (other == 1.0):
+                    new_power = -self.power
+                    new_symbol = self.SI_prefixes()[self._find_closest_SI_power_index(new_power)]
+                return Unit.Prefix(new_symbol,new_power)
+            return NotImplemented
+        
+        def __pow__(self, exponent):
+            if isinstance(exponent,int):
+                new_power = exponent*self.power
+                new_symbol = self.SI_prefixes()[self._find_closest_SI_power_index(new_power)]
+                return Unit.Prefix(new_symbol,new_power)
+            return NotImplemented 
         
         def convert_to(self,prefix:str):
             Check.validity(prefix,"SI prefix",self.SI_prefixes())

@@ -7,82 +7,80 @@ import matplotlib.pyplot as plt
 class Measured:
     def __init__(self) -> None:
         pass
-    class Variable:
+    class Quantity:
         def __init__(
             self,
             value:Union[float,int],
             unit:Unit,
             ) -> None:
-            self.value = value
             Check.object_class(unit,Unit,"unit")
             self.unit = unit
+            self.value = value*self.unit.alternate_prefix.multiplier
+            self.unit.alternate_prefix.multiplier = 1.0
+            self.unit.alternate_prefix.power = self.unit.alternate_prefix.SI_power
+            self.prefix_ratio = self.unit.prefix/self.unit.alternate_prefix
         
         def convert_to(self,prefix:str):
-            Check.validity(prefix,"SI prefix",Unit.SI_prefixes())
-            self.value /= self.unit.multiplier
-            self.unit.convert_to(prefix)
-            self.value *= self.unit.multiplier
+            new_unit = self.unit.update_prefix(prefix)
+            return Measured.Quantity(self.value,new_unit)
         
+        def __neg__(self):
+            return Measured.Quantity(-self.value,self.unit)
+
         def __add__(self,other):
-            if isinstance(other, Measured.Variable):
-                if other.unit == self.unit:
-                    return Measured.Variable(self.value + other.value,self.unit)
-                # elif other.unit.dimension() == other.unit.dimension():
-                #     min_SI_power = min(self.unit.SI_power,other.unit.SI_power)
-                #     minimum_prefix = Unit.SI_prefixes()[Unit._find_SI_power_index(min_SI_power)]
-                #     d1 = self.copy()
-                #     d1.convert_to(minimum_prefix)
-                #     d2 = other.copy()
-                #     d2.convert_to(minimum_prefix)
-                #     return MeasuredArray(d1.values - d2.values,d1.unit)
+            if isinstance(other, Measured.Quantity):
+                if (other.unit == self.unit)>0:
+                    m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                    return Measured.Quantity(m1*self.value + m2*other.value,new_unit)
                 else:
-                    raise ValueError("(Measured.Variable)s must have the same units for addition")
+                    raise ValueError("(Measured.Quantity)s must have the same unit symbols and dimensions for addition")
             return NotImplemented
         
         def __sub__(self,other):
-            if isinstance(other, Measured.Variable):
-                if other.unit == self.unit:
-                    return Measured.Variable(self.value - other.value,self.unit)
+            if isinstance(other, Measured.Quantity):
+                if (other.unit == self.unit)>0:
+                    m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                    return Measured.Quantity(m1*self.value - m2*other.value,new_unit)
                 else:
-                    raise ValueError("(Measured.Variable)s must have the same units for subtraction")
+                    raise ValueError("(Measured.Quantity)s must have the same units for subtraction")
             return NotImplemented
         
         def __mul__(self, other):
-            if isinstance(other, Measured.Variable):
-                return Measured.Variable(self.value * other.value,self.unit*other.unit)
+            if isinstance(other, Measured.Quantity):
+                return Measured.Quantity(self.value * other.value,self.unit*other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(self.value * other,self.unit)
+                return Measured.Quantity(self.value * other,self.unit)
             return NotImplemented
 
         def __rmul__(self, other):
-            if isinstance(other, Measured.Variable):
-                return Measured.Variable(self.value * other.value,self.unit*other.unit)
+            if isinstance(other, Measured.Quantity):
+                return Measured.Quantity(self.value * other.value,self.unit*other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(self.value * other,self.unit)
+                return Measured.Quantity(self.value * other,self.unit)
             return NotImplemented
         
         def __truediv__(self, other):
-            if isinstance(other, Measured.Variable):
-                return Measured.Variable(self.value / other.value,self.unit/other.unit)
+            if isinstance(other, Measured.Quantity):
+                return Measured.Quantity(self.value / other.value,self.unit/other.unit)
             elif isinstance(other,Measured.Array):
                 return Measured.Array(self.value/other.values,self.unit/other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(self.value / other,self.unit)
+                return Measured.Quantity(self.value / other,self.unit)
             else:
                 return NotImplemented
         
         def __rtruediv__(self,other):
-            if isinstance(other, Measured.Variable):
-                return Measured.Variable(other.value / self.value,other.unit/self.unit)
+            if isinstance(other, Measured.Quantity):
+                return Measured.Quantity(other.value / self.value,other.unit/self.unit)
             elif isinstance(other,Measured.Array):
                 return Measured.Array(other.values/self.value,other.unit/self.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(other / self.value,1/self.unit)
+                return Measured.Quantity(other / self.value,1/self.unit)
             else:
                 return NotImplemented
         
         def __str__(self):
-            return str(self.value)+self.unit.full_symbol()
+            return str(self.value)+self.unit.__str__()
         
     class Array:
         def __init__(
@@ -91,32 +89,46 @@ class Measured:
             unit:Unit,
             ) -> None:
             Check.object_class(values,np.ndarray,"value")
-            self.values = values
             Check.object_class(unit,Unit,"unit")
             self.unit = unit
+            self.values = values*self.unit.alternate_prefix.multiplier
+            self.unit.alternate_prefix.multiplier = 1.0
+            self.unit.alternate_prefix.power = self.unit.alternate_prefix.SI_power
+            self.prefix_ratio = self.unit.prefix/self.unit.alternate_prefix
+        
+        def convert_to(self,prefix:str):
+            new_unit = self.unit.update_prefix(prefix)
+            return Measured.Array(self.values,new_unit)
+        
+        def __neg__(self):
+            return Measured.Array(-self.value,self.unit)
         
         def __add__(self,other):
             if isinstance(other, Measured.Array):
-                if other.unit == self.unit:
-                    return Measured.Array(self.values + other.values,self.unit)
+                if (other.unit == self.unit)>0:
+                    m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                    return Measured.Array(m1*self.values + m2*other.values,new_unit)
                 else:
                     raise ValueError("(Measured.Array)s must have the same units for addition")
-            elif isinstance(other, Measured.Variable):
-                if other.unit == self.unit:
-                    return Measured.Array(self.values + other.value,self.unit)
+            elif isinstance(other, Measured.Quantity):
+                if (other.unit == self.unit)>0:
+                    m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                    return Measured.Array(m1*self.values + m2*other.value,new_unit)
                 else:
                     raise ValueError("Measured objects must have the same units for addition")
             return NotImplemented
         
         def __sub__(self,other):
             if isinstance(other, Measured.Array):
-                if other.unit == self.unit:
-                    return Measured.Array(self.values - other.values,self.unit)
+                if (other.unit == self.unit)>0:
+                    m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                    return Measured.Array(m1*self.values - m2*other.values,new_unit)
                 else:
                     raise ValueError("(Measured.Array)s must have the same units for subtraction")
-            elif isinstance(other, Measured.Variable):
-                if other.unit == self.unit:
-                    return Measured.Array(self.values - other.value,self.unit)
+            elif isinstance(other, Measured.Quantity):
+                if (other.unit == self.unit)>0:
+                    m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                    return Measured.Array(m1*self.values - m2*other.value,new_unit)
                 else:
                     raise ValueError("Measured objects must have the same units for addition")
             return NotImplemented
@@ -124,48 +136,42 @@ class Measured:
         def __mul__(self, other):
             if isinstance(other, Measured.Array):
                 return Measured.Array(self.values * other.values,self.unit*other.unit)
-            elif isinstance(other, Measured.Variable):
+            elif isinstance(other, Measured.Quantity):
                 return Measured.Array(self.values * other.value,self.unit*other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(self.values * other,self.unit)
+                return Measured.Quantity(self.values * other,self.unit)
             return NotImplemented
 
         def __rmul__(self, other):
             if isinstance(other, Measured.Array):
                 return Measured.Array(self.values * other.values,self.unit*other.unit)
-            elif isinstance(other, Measured.Variable):
+            elif isinstance(other, Measured.Quantity):
                 return Measured.Array(self.values * other.value,self.unit*other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(self.values * other,self.unit)
+                return Measured.Quantity(self.values * other,self.unit)
             return NotImplemented
         
         def __truediv__(self, other):
             if isinstance(other, Measured.Array):
                 return Measured.Array(self.values / other.values,self.unit/other.unit)
-            elif isinstance(other, Measured.Variable):
-                return Measured.Variable(self.values / other.value,self.unit/other.unit)
+            elif isinstance(other, Measured.Quantity):
+                return Measured.Quantity(self.values / other.value,self.unit/other.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(self.values / other,self.unit)
+                return Measured.Quantity(self.values / other,self.unit)
             return NotImplemented
         
         def __rtruediv__(self,other):
-            if isinstance(other, Measured.Variable):
-                return Measured.Variable(other.value / self.values,other.unit/self.unit)
+            if isinstance(other, Measured.Quantity):
+                return Measured.Quantity(other.value / self.values,other.unit/self.unit)
             elif isinstance(other,Measured.Array):
                 return Measured.Array(other.values/self.values,other.unit/self.unit)
             elif isinstance(other, (int, float)):
-                return Measured.Variable(other / self.values,1/self.unit)
+                return Measured.Quantity(other / self.values,1/self.unit)
             else:
                 return NotImplemented
         
         def __str__(self):
-            return str(self.values)+self.unit.full_symbol()
-
-        def convert_to(self,prefix:str):
-            Check.validity(prefix,"SI prefix",Unit.SI_prefixes())
-            self.values /= self.unit.multiplier
-            self.unit.convert_to(prefix)
-            self.values *= self.unit.multiplier
+            return str(self.values)+self.unit.__str__()
         
         def copy(self):
             return Measured.Array(self.values,self.unit)
@@ -196,13 +202,13 @@ class Measured:
             plt.ylabel(y_key + " ({0})".format(y.unit.full_symbol()))
     
     
-from svt import SI
-a = Measured.Variable(3,SI.meter())
-b = Measured.Variable(4,SI.newton())
-c = Measured.Array(np.linspace(1,2),SI.meter())
-d = Measured.Array(np.linspace(1,2),SI.newton())
-dc = Measured.DataCollection(x=c,y=d)
-import matplotlib
-matplotlib.use('TkAgg')
-dc.plot2D("x","y")
-plt.show()
+# from svt import SI
+# a = Measured.Quantity(3,SI.meter())
+# b = Measured.Quantity(4,SI.newton())
+# c = Measured.Array(np.linspace(1,2),SI.meter())
+# d = Measured.Array(np.linspace(1,2),SI.newton())
+# dc = Measured.DataCollection(x=c,y=d)
+# import matplotlib
+# matplotlib.use('TkAgg')
+# dc.plot2D("x","y")
+# plt.show()

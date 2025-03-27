@@ -5,7 +5,7 @@ from svt.povray_scene import (
     PovrayScene,
 )
 from svt.datafile_format import (
-    DataFile,
+    SceneDataFile,
     PovraySceneDataFile,
     ThreeJSSceneDataFile,
 )
