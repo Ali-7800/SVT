@@ -1,7 +1,8 @@
 from svt.units import Unit
 from svt._check import Check
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 class Measured:
     def __init__(self,value,unit:Unit):
@@ -81,34 +82,196 @@ class Measured:
         elif isinstance(self.value,np.ndarray):
             return self.value.shape
     
+    def transpose(self):
+        if self.shape == 1:
+            return self.copy()
+        else:
+            return Measured(self.value.T,self.unit)
+    
+    def scale(self,factor):
+        if isinstance(factor,(int,float)):
+            self.value *= factor
+        elif isinstance(factor,Measured):
+            self.value *= factor.value
+            self.unit *= factor.unit
+        else:
+            return NotImplemented
+    
     def copy(self):
         return Measured(self.value,self.unit)
     
     def valid_values(self):
         return [int,float,np.ndarray]
 
+
     class Collection:
         def __init__(
             self,
             **kwargs) -> None:
+            self.shape = None
             self.keys = []
             for key in kwargs.keys():
-                Check.object_class(kwargs[key],Measured,"","Every keyword argument in Measured.Collection must be an instance of Measured")
+                Check.object_class(kwargs[key],Measured,"keyword argument/component")
+                self._shape_check(kwargs[key])
                 setattr(self, key, kwargs[key])
             self.keys+=kwargs.keys()
             
         def append(self,key,data):
-            Check.object_class(data,Measured,"","Only Measured objects can be appended to a Measured.Collection")
-            Check.condition(key not in self.keys,KeyError,"Key already used for other Measured object in collection, please use a different key")
+            Check.object_class(data,Measured,"","Only Measured objects can be appended to a Collection object")
+            Check.condition(key not in self.keys,KeyError,"Key already used for other Measured object in Collection, please use a different key")
+            self._shape_check(data)
             setattr(self, key, data)
             self.keys.append(key)
         
-        def plot2D(self,x_key:str,y_key:str,**kwargs):
-            Check.validity(x_key,"key1",self.keys)
-            Check.validity(y_key,"key2",self.keys)
-            x = getattr(self,x_key)
-            y = getattr(self,y_key)
-            Check.condition(x.shape==y.shape,ValueError,"Measured objects must have same shape to be plotted")
-            plt.plot(x.value,y.value,**kwargs)
-            plt.xlabel(x_key + " ({0})".format(x.unit.plot_symbol()))
-            plt.ylabel(y_key + " ({0})".format(y.unit.plot_symbol()))
+        def __len__(self):
+            return len(self.keys)
+        
+        def _shape_check(self,data):
+            #any Measured object can be appended to a Collection
+            pass
+
+
+    class Point(Collection):
+        def __init__(
+            self,
+            x,
+            y,
+            z  = None) -> None:
+            if z is None:
+                Measured.Collection.__init__(
+                    self,
+                    x = x,
+                    y = y
+                    )
+            else:
+                Measured.Collection.__init__(
+                    self,
+                    x = x,
+                    y = y,
+                    z = z,
+                    )
+        
+        def _shape_check(self,data):
+            Check.condition(data.shape==1,ValueError,"All Point components must be of shape 1")
+
+    class Curve(Collection):
+        def __init__(
+            self,
+            x,
+            y,
+            z  = None) -> None:
+            if z is None:
+                Measured.Collection.__init__(
+                    self,
+                    x = x,
+                    y = y
+                    )
+            else:
+                Measured.Collection.__init__(
+                    self,
+                    x = x,
+                    y = y,
+                    z = z,
+                    )
+        
+        def _shape_check(self,data):
+            if self.shape == None:
+                Check.condition(data.shape!=1,ValueError,"Must have more than one point for Curve")
+                Check.condition(len(data.shape)==1,ValueError,"Must be a 1D arrat for a Curve component")
+                self.shape == data.shape
+            else:
+                Check.condition(self.shape==data.shape,ValueError,"All Curve components must have the same shape")
+
+    class Surface(Collection):
+        def __init__(
+            self,
+            x,
+            y,
+            z  = None) -> None:
+            if z is None:
+                Measured.Collection.__init__(
+                    self,
+                    x = x,
+                    y = y
+                    )
+            else:
+                Measured.Collection.__init__(
+                    self,
+                    x = x,
+                    y = y,
+                    z = z,
+                    )
+        
+        def _shape_check(self,data):
+            if self.shape == None:
+                Check.condition(data.shape!=1,ValueError,"Must have more than one point for Surface")
+                self.shape == data.shape
+            else:
+                Check.condition(self.shape==data.shape,ValueError,"All Surface components must have the same shape")
+
+    class Figure:
+        def __init__(
+            self,
+            x_unit:Unit,
+            y_unit:Unit,
+            z_unit = None,
+            title = "") -> None:
+            Check.object_class(x_unit,Unit,"x unit")
+            Check.object_class(y_unit,Unit,"y unit")
+            self.x_unit = x_unit
+            self.y_unit = y_unit
+            if z_unit is None:
+                self.dimension = 2
+            else:
+                Check.object_class(z_unit,Unit,"z unit")
+                self.z_unit = z_unit
+                self.dimension = 3
+            # if self.dimension == 2:
+            #     plt.figure()
+            # else:
+            #     plt.figure().add_subplot(projection='3d')
+            #     pass
+
+        def plotPoint(self,point):
+            pass
+        
+        def plotCurve(self,curve,x_label = "x",y_label = "y",z_label = "z",**kwargs):
+            Check.object_class(curve,Measured.Curve,"Curve")
+            Check.condition(len(curve) == self.dimension,ValueError,"Can't plot a {0}D curve on a {1}D Figure".format(len(curve),self.dimension))
+            Check.condition((curve.x.unit == self.x_unit)>0,ValueError,"Curve x component has different unit than Figure's x axis")
+            Check.condition((curve.y.unit == self.y_unit)>0,ValueError,"Curve y component has different unit than Figure's y axis")
+            curve.x += Measured(0,self.x_unit)
+            curve.y += Measured(0,self.y_unit)
+            if self.dimension == 2:
+                plt.plot(curve.x.value,curve.y.value,**kwargs)
+                plt.xlabel(x_label + " ({0})".format(curve.x.unit.plot_symbol()))
+                plt.ylabel(y_label + " ({0})".format(curve.y.unit.plot_symbol()))
+            else:
+                Check.condition((curve.z.unit == self.z_unit)>0,ValueError,"Curve z component has different unit than Figure's z axis")
+                curve.z += Measured(0,self.z_unit)
+                plt.plot(curve.x.value,curve.y.value,curve.z.value,**kwargs)
+                plt.set_xlabel(x_label + " ({0})".format(curve.x.unit.plot_symbol()))
+                plt.set_ylabel(y_label + " ({0})".format(curve.y.unit.plot_symbol()))
+                plt.set_zlabel(z_label + " ({0})".format(curve.z.unit.plot_symbol()))
+        
+        def plotSurface(self,surface):
+            pass
+
+# from svt import SI
+# a = Measured(1,Unit(symbol = Unit.Symbol(["m"]),dimension = Unit.Dimension(["length"]),prefix= Unit.Prefix("m")))
+# b = Measured(2,SI.meter())
+# c = Measured(np.linspace(0,1),SI.newton())
+# print(a)
+# d = c/a**2
+# print(c,d)
+# my_col = Measured.Collection(a=a,b=b,c=c,d=d)
+# my_point = Measured.Point(x=a,y=b)
+# my_curve = Measured.Curve(x=c,y=d)
+# my_curve2 = Measured.Curve(x=c,y=c)
+# my_figure = Measured.Figure(x_unit=SI.newton(),y_unit=SI.pascal())
+# import matplotlib
+# matplotlib.use("TkAgg")
+# my_figure.plotCurve(my_curve)
+# # my_figure.plotCurve(my_curve2)
+
+# plt.show()
