@@ -58,7 +58,21 @@ class Check:
         """
         if not isinstance(variable,desired_class):
             if error_msg is None:
-                raise ValueError("{0} must be an instance of {1}, it is instead a {2}".format(variable_name,desired_class.__name__,type(variable).__name__))
+                raise ValueError("{0} must be an instance of {1}, it is instead an instance of {2}".format(variable_name,desired_class.__name__,type(variable).__name__))
+            else:
+                raise ValueError(error_msg)
+    
+    @staticmethod
+    def object_class_validity(variable,valid_classes,variable_name:str,error_msg=None):
+        """ 
+        This method is for checking a object is an instance of a certian class
+        """
+        valid = False
+        for valid_class in valid_classes:
+            valid = (valid or isinstance(variable,valid_class))
+        if not valid:
+            if error_msg is None:
+                raise ValueError("{0} must be an instance of one of {1}, it is instead an instance of {2}".format(variable_name,valid_classes,type(variable).__name__))
             else:
                 raise ValueError(error_msg)
     
