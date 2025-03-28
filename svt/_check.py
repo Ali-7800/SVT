@@ -12,7 +12,7 @@ class Check:
         This method is for checking a variable is a member of list of
         valid variables
         """
-        if variable not in valid_variables:
+        if (variable not in valid_variables) and len(valid_variables)>0:
             if error_msg is None:
                 raise ValueError("{0} is not a valid {1}, must be one of {2}".format(variable,variable_name,valid_variables))
             else:
