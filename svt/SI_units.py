@@ -19,7 +19,7 @@ class SI:
     
     @staticmethod
     def hertz(prefix=""):
-        return Unit(symbol = Unit.Symbol([],["s"]),dimension = Unit.Dimension([],["time"]),prefix= 1/Unit.Prefix("prefix"),alternate_symbol= Unit.Symbol(["Hz"]))
+        return Unit(symbol = Unit.Symbol([],["s"]),dimension = Unit.Dimension([],["time"]),prefix= Unit.Prefix(prefix),alternate_symbol= Unit.Symbol(["Hz"]))
     
     @staticmethod
     def kilogram(prefix="k"):
