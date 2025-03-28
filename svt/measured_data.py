@@ -16,8 +16,62 @@ class Measured:
         self.shape = self._shape()
     
     def convert_to(self,prefix:str):
-            new_unit = self.unit.update_prefix(prefix)
-            return Measured(self.value,new_unit)
+        new_unit = self.unit.update_prefix(prefix)
+        return Measured(self.value,new_unit)
+    
+    def __eq__(self, other):
+        """Defines behavior for the equality operator (==)."""
+        if isinstance(other, Measured):
+            if (self.unit==other.unit)>0:
+                m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                return m1*self.value == m2*other.value
+            else:
+                raise ValueError("Cannot compare Measured objects of different units")
+        return NotImplemented
+
+    def __ne__(self, other):
+        """Defines behavior for the inequality operator (!=)."""
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        """Defines behavior for the less-than operator (<)."""
+        if isinstance(other, Measured):
+            if (self.unit==other.unit)>0:
+                m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                return m1*self.value < m2*other.value
+            else:
+                raise ValueError("Cannot compare Measured objects of different units")
+        return NotImplemented
+
+    def __gt__(self, other):
+        """Defines behavior for the greater-than operator (>)."""
+        if isinstance(other, Measured):
+            if (self.unit==other.unit)>0:
+                m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                return m1*self.value > m2*other.value
+            else:
+                raise ValueError("Cannot compare Measured objects of different units")
+        return NotImplemented
+
+    def __le__(self, other):
+        """Defines behavior for the less-than-or-equal-to operator (<=)."""
+        if isinstance(other, Measured):
+            if (self.unit==other.unit)>0:
+                m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                return m1*self.value <= m2*other.value
+            else:
+                raise ValueError("Cannot compare Measured objects of different units")
+        return NotImplemented
+
+    def __ge__(self, other):
+        """Defines behavior for the greater-than-or-equal-to operator (>=)."""
+        if isinstance(other, Measured):
+            if (self.unit==other.unit)>0:
+                m1,m2,new_unit = Unit.unify_prefixes(self.unit,other.unit)
+                return m1*self.value >= m2*other.value
+            else:
+                raise ValueError("Cannot compare Measured objects of different units")
+        return NotImplemented
         
     def __neg__(self):
         return Measured(-self.value,self.unit)
@@ -72,6 +126,12 @@ class Measured:
         if isinstance(exponent,int):
             return Measured(self.value**exponent,self.unit**exponent)
         return NotImplemented
+    
+    def __getitem__(self, key):
+        return Measured(self.value[key],self.unit)
+    
+    def __setitem__(self, key, value):
+        self.value[key] = value
 
     def __str__(self):
         return str(self.value)+self.unit.__str__()
@@ -258,9 +318,10 @@ class Measured:
             pass
 
 # from svt import SI
-# a = Measured(1,Unit(symbol = Unit.Symbol(["m"]),dimension = Unit.Dimension(["length"]),prefix= Unit.Prefix("m")))
+# a = Measured(1000,Unit(symbol = Unit.Symbol(["m"]),dimension = Unit.Dimension(["length"]),prefix= Unit.Prefix("m")))
 # b = Measured(2,SI.meter())
-# c = Measured(np.linspace(0,1),SI.newton())
+# c = Measured(np.linspace(0,1),SI.meter())
+# d = Measured(np.linspace(0,2),SI.meter())
 # print(a)
 # d = c/a**2
 # print(c,d)
