@@ -2,6 +2,7 @@ from svt.units import Unit
 from svt._check import Check
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Union
 
 class Measured:
     def __init__(self,value,unit:Unit):
@@ -162,24 +163,33 @@ class Measured:
     def valid_values(self):
         return [int,float,np.ndarray]
     
-    def match_units_to(self,unit_collection:Unit.Collection,name = None):
-        Check.object_class(unit_collection,Unit.Collection,"Unit Collection")
-        if name is None:
-            if self.unit.dimension.symbol in unit_collection:
-                temp = self + Measured(0,unit_collection[self.unit.dimension.symbol])
-                temp = temp.convert_to(unit_collection[self.unit.dimension.symbol].alternate_prefix.symbol)
+    def match_unit_to(self,unit_to_match:Union[Unit.Collection,Unit],name = None):
+        if isinstance(unit_to_match,Unit.Collection):
+            if name is None:
+                if self.unit.dimension.symbol in unit_to_match:
+                    temp = self + Measured(0,unit_to_match[self.unit.dimension.symbol])
+                    temp = temp.convert_to(unit_to_match[self.unit.dimension.symbol].alternate_prefix.symbol)
+                    self.unit = temp.unit
+                    self.value = temp.value
+                    self.shape = temp.shape
+            else:
+                Check.condition(name in unit_to_match,ValueError,"Given name is not in Unit.Collection")
+                Check.condition((unit_to_match[name]==self.unit)>0,ValueError,"Given name does not have units that match")
+                temp = self + Measured(0,unit_to_match[name])
+                temp = temp.convert_to(unit_to_match[name].alternate_prefix.symbol)
                 self.unit = temp.unit
                 self.value = temp.value
                 self.shape = temp.shape
-        else:
-            Check.condition(name in unit_collection,ValueError,"Given name is not in Unit.Collection")
-            Check.condition((unit_collection[name]==self.unit)>0,ValueError,"Given name does not have units that match")
-            temp = self + Measured(0,unit_collection[name])
-            temp = temp.convert_to(unit_collection[name].alternate_prefix.symbol)
+        elif isinstance(unit_to_match,Unit):
+            Check.condition((unit_to_match==self.unit)>0,ValueError,"Given name does not have units that match")
+            temp = self + Measured(0,unit_to_match)
+            temp = temp.convert_to(unit_to_match.alternate_prefix.symbol)
             self.unit = temp.unit
             self.value = temp.value
             self.shape = temp.shape
-
+        else:
+            return NotImplemented
+    
     class Collection:
         def __init__(
             self,
@@ -311,15 +321,15 @@ class Measured:
             Check.condition(len(curve) == self.dimension,ValueError,"Can't plot a {0}D curve on a {1}D Figure".format(len(curve),self.dimension))
             Check.condition((curve.x.unit == self.x_unit)>0,ValueError,"Curve x component has different unit than Figure's x axis")
             Check.condition((curve.y.unit == self.y_unit)>0,ValueError,"Curve y component has different unit than Figure's y axis")
-            curve.x += Measured(0,self.x_unit)
-            curve.y += Measured(0,self.y_unit)
+            curve.x.match_unit_to(self.x_unit)
+            curve.y.match_unit_to(self.y_unit)
             if self.dimension == 2:
                 plt.plot(curve.x.value,curve.y.value,**kwargs)
                 plt.xlabel(x_label + " ({0})".format(curve.x.unit.plot_symbol()))
                 plt.ylabel(y_label + " ({0})".format(curve.y.unit.plot_symbol()))
             else:
                 Check.condition((curve.z.unit == self.z_unit)>0,ValueError,"Curve z component has different unit than Figure's z axis")
-                curve.z += Measured(0,self.z_unit)
+                curve.z.match_unit_to(self.z_unit)
                 plt.plot(curve.x.value,curve.y.value,curve.z.value,**kwargs)
                 plt.set_xlabel(x_label + " ({0})".format(curve.x.unit.plot_symbol()))
                 plt.set_ylabel(y_label + " ({0})".format(curve.y.unit.plot_symbol()))
@@ -331,16 +341,13 @@ class Measured:
 # from svt import SI
 # a = Measured(1000,Unit(symbol = Unit.Symbol(["m"]),dimension = Unit.Dimension(["length"]),prefix= Unit.Prefix("m")))
 # b = Measured(2,SI.meter())
-# c = Measured(np.linspace(0,1),SI.meter())
-# d = Measured(np.linspace(0,2),SI.meter())
-# print(a)
-# d = c/a**2
-# print(c,d)
+# c = Measured(np.linspace(0,1),SI.newton())
+# d = Measured(np.linspace(0,2),SI.pascal())
 # my_col = Measured.Collection(a=a,b=b,c=c,d=d)
 # my_point = Measured.Point(x=a,y=b)
 # my_curve = Measured.Curve(x=c,y=d)
 # my_curve2 = Measured.Curve(x=c,y=c)
-# my_figure = Measured.Figure(x_unit=SI.newton(),y_unit=SI.pascal())
+# my_figure = Measured.Figure(x_unit=SI.newton("m"),y_unit=SI.pascal("M"))
 # import matplotlib
 # matplotlib.use("TkAgg")
 # my_figure.plotCurve(my_curve)
