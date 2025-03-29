@@ -167,6 +167,7 @@ class Measured:
         if name is None:
             if self.unit.dimension.symbol in unit_collection:
                 temp = self + Measured(0,unit_collection[self.unit.dimension.symbol])
+                temp = temp.convert_to(unit_collection[self.unit.dimension.symbol].alternate_prefix.symbol)
                 self.unit = temp.unit
                 self.value = temp.value
                 self.shape = temp.shape
