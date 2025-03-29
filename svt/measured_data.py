@@ -3,7 +3,6 @@ from svt._check import Check
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 class Measured:
     def __init__(self,value,unit:Unit):
         Check.object_class(unit,Unit,"unit")
@@ -162,7 +161,23 @@ class Measured:
     
     def valid_values(self):
         return [int,float,np.ndarray]
-
+    
+    def match_units_to(self,unit_collection:Unit.Collection,name = None):
+        Check.object_class(unit_collection,Unit.Collection,"Unit Collection")
+        if name is None:
+            if self.unit.dimension.symbol in unit_collection:
+                temp = self + Measured(0,unit_collection[self.unit.dimension.symbol])
+                self.unit = temp.unit
+                self.value = temp.value
+                self.shape = temp.shape
+        else:
+            Check.condition(name in unit_collection,ValueError,"Given name is not in Unit.Collection")
+            Check.condition((unit_collection[name]==self.unit)>0,ValueError,"Given name does not have units that match")
+            temp = self + Measured(0,unit_collection[name])
+            temp = temp.convert_to(unit_collection[name].alternate_prefix.symbol)
+            self.unit = temp.unit
+            self.value = temp.value
+            self.shape = temp.shape
 
     class Collection:
         def __init__(
@@ -170,18 +185,14 @@ class Measured:
             **kwargs) -> None:
             self.shape = None
             self.keys = []
+            self.append(**kwargs)
+            
+        def append(self,**kwargs):
             for key in kwargs.keys():
                 Check.object_class(kwargs[key],Measured,"keyword argument/component")
                 self._shape_check(kwargs[key])
                 setattr(self, key, kwargs[key])
             self.keys+=kwargs.keys()
-            
-        def append(self,key,data):
-            Check.object_class(data,Measured,"","Only Measured objects can be appended to a Collection object")
-            Check.condition(key not in self.keys,KeyError,"Key already used for other Measured object in Collection, please use a different key")
-            self._shape_check(data)
-            setattr(self, key, data)
-            self.keys.append(key)
         
         def __len__(self):
             return len(self.keys)
@@ -189,7 +200,6 @@ class Measured:
         def _shape_check(self,data):
             #any Measured object can be appended to a Collection
             pass
-
 
     class Point(Collection):
         def __init__(

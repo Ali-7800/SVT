@@ -422,3 +422,38 @@ class Unit:
         def _find_SI_prefix_index(prefix:str):
             Check.validity(prefix,"prefix",Unit.Prefix.SI_prefixes())
             return Unit.Prefix.SI_prefixes().index(prefix)
+
+    class Collection:
+        def __init__(
+            self,
+            *args,
+            **kwargs) -> None:
+            self.shape = None
+            self.dict = {}
+            self.symbol_dict = {}
+            self.append(*args,**kwargs)
+            
+        def append(self,*args,**kwargs):
+            for key in kwargs.keys():
+                Check.object_class(kwargs[key],Unit,"keyword argument")
+                self.dict[key] = kwargs[key]
+                self.symbol_dict[key] = kwargs[key].__str__()
+            for argument in args:
+                Check.object_class(argument,Unit,"argument")
+                self.dict[argument.dimension.symbol] = argument
+                self.symbol_dict[argument.dimension.symbol] = argument.__str__()
+        
+        def __getitem__(self, key):
+            Check.validity(key,"given key",self.dict.keys())
+            return self.dict[key]
+    
+        def __setitem__(self, key, value):
+            Check.validity(key,"given key",self.dict.keys())
+            Check.object_class(value,Unit,"value","To change a key in a Unit.Collection, the value given must be a Unit")
+            self.dict[key] = value
+        
+        def __contains__(self, item):
+            return (item in self.dict.keys())
+        
+        def __str__(self) -> str:
+            return self.symbol_dict.__str__()

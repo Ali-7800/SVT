@@ -2,12 +2,21 @@ from svt.units import (
     Unit
 )
 
-class SI:
+class SI(Unit.Collection):
     """ 
     This is a class for storing and defining SI units
     """
     def __init__(self) -> None:
-        pass
+        unit_list = []
+        for method in SI.__dict__:
+            if isinstance(SI.__dict__[method],staticmethod):
+                my_unit = SI.__dict__[method]()
+                unit_list.append(my_unit)
+        
+        Unit.Collection.__init__(
+            self,
+            *unit_list,
+        )
 
     @staticmethod
     def meter(prefix=""):
