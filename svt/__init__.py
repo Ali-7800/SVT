@@ -15,7 +15,11 @@ from svt.appearence import (
 from svt.units import (
     Unit,
 )
-from _check import (
+from svt.plotting import (
+    Figure,
+    MatplotlibFigure,
+)
+from svt._check import (
     Check
 )
 from svt.SI_units import (
