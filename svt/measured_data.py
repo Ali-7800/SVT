@@ -189,6 +189,13 @@ class Measured:
             self.shape = temp.shape
         else:
             return NotImplemented
+        
+    def append(self,values):
+        if self.shape == 1:
+            self.value = np.array([self.value])
+            self.value = np.append(self.value,values)
+        else:
+            self.value = np.append(self.value,values)
     
     class Collection:
         def __init__(
