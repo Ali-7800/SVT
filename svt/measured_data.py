@@ -194,8 +194,18 @@ class Measured:
         if self.shape == 1:
             self.value = np.array([self.value])
             self.value = np.append(self.value,values)
+            self.shape = self._shape()
         else:
             self.value = np.append(self.value,values)
+            self.shape = self._shape()
+    
+    @staticmethod
+    def empty(shape,unit):
+        return Measured(np.empty(shape),unit)
+    
+    @staticmethod
+    def array(elements:list,unit):
+        return Measured(np.array(elements),unit)
     
     class Collection:
         def __init__(
