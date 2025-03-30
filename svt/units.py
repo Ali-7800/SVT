@@ -6,6 +6,9 @@ import numpy as np
 from svt._check import Check
 
 class Unit:
+    """ 
+    This is a class for defining SI units
+    """
     def __init__(
         self,
         symbol,
@@ -435,13 +438,17 @@ class Unit:
             
         def append(self,*args,**kwargs):
             for key in kwargs.keys():
-                Check.object_class(kwargs[key],Unit,"keyword argument")
+                Check.object_class(kwargs[key],(Unit,MiscUnit),"keyword argument")
                 self.dict[key] = kwargs[key]
                 self.symbol_dict[key] = kwargs[key].__str__()
             for argument in args:
-                Check.object_class(argument,Unit,"argument")
-                self.dict[argument.dimension.symbol] = argument
-                self.symbol_dict[argument.dimension.symbol] = argument.__str__()
+                Check.object_class(argument,(Unit,MiscUnit),"argument")
+                if isinstance(argument,Unit):
+                    self.dict[argument.dimension.symbol] = argument
+                    self.symbol_dict[argument.dimension.symbol] = argument.__str__()
+                else:
+                    self.dict[argument.SI_unit.dimension.symbol] = argument
+                    self.symbol_dict[argument.SI_unit.dimension.symbol] = argument.symbol.__str__()
         
         def __getitem__(self, key):
             Check.validity(key,"given key",self.dict.keys())
@@ -449,7 +456,7 @@ class Unit:
     
         def __setitem__(self, key, value):
             Check.validity(key,"given key",self.dict.keys())
-            Check.object_class(value,Unit,"value","To change a key in a Unit.Collection, the value given must be a Unit")
+            Check.object_class(value,(Unit,MiscUnit),"value","To change a key in a Unit.Collection, the value given must be a Unit or a MiscUnit")
             self.dict[key] = value
         
         def __contains__(self, item):
@@ -457,3 +464,28 @@ class Unit:
         
         def __str__(self) -> str:
             return self.symbol_dict.__str__()
+
+
+class MiscUnit:
+    def __init__(self,
+                 symbol:Unit.Symbol,
+                 SI_unit_counterpart:Unit,
+                 convert_to_SI:callable,
+                 convert_from_SI:callable,
+                 ) -> None:
+        Check.object_class(symbol,Unit.Symbol,"Symbol")
+        self.symbol = symbol
+        Check.object_class(SI_unit_counterpart,Unit,"SI Unit Counterpart")
+        self.SI_unit = SI_unit_counterpart
+        #need function checks
+        self.convert_to_SI = convert_to_SI
+        self.convert_from_SI = convert_from_SI
+
+    def __eq__(self, other):
+        if isinstance(other,MiscUnit):
+            if (self.SI_unit==other.SI_unit)==1 and self.symbol==other.symbol:
+                return True
+            else:
+                return False
+        else:
+            NotImplemented
