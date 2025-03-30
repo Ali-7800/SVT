@@ -22,8 +22,9 @@ from svt.plotting import (
 from svt._check import (
     Check
 )
-from svt.SI_units import (
-    SI
+from svt.unit_collections import (
+    SI,
+    MiscUnits,
 )
 from svt.measured_data import (
     Measured
