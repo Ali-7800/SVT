@@ -43,6 +43,8 @@ class Unit:
                 return 0.5
             else:
                 return 0
+        elif isinstance(other,MiscUnit):
+            return other.SI_unit == self
         else:
             NotImplemented
 
@@ -489,3 +491,7 @@ class MiscUnit:
                 return False
         else:
             NotImplemented
+    
+    def plot_symbol(self):
+        return "${0}$".format(self.symbol._symbol_with_powers())
+    
