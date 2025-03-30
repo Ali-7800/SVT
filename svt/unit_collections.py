@@ -123,6 +123,13 @@ class MiscUnits(Unit.Collection):
                         convert_from_SI= lambda x:x-273.15,
                         convert_to_SI= lambda x:x+273.15,)
     @staticmethod
+    def per_celsius():
+        return MiscUnit(
+                        symbol = Unit.Symbol([],["°C"]),
+                        SI_unit_counterpart=1/SI.K(),
+                        convert_from_SI= lambda x:x,
+                        convert_to_SI= lambda x:x,)
+    @staticmethod
     def fahrenheit():
         return MiscUnit(
                         symbol = Unit.Symbol(["°F"]),
