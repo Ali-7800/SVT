@@ -2,6 +2,7 @@ from svt.units import Unit,MiscUnit
 from svt._check import Check
 import numpy as np
 from typing import Union
+from scipy import interpolate
 
 class Measured:
     def __init__(self,value,unit:Union[Unit,MiscUnit]):
@@ -34,6 +35,36 @@ class Measured:
         else:
             raise ValueError("Cannot convert non SI unit to different prefix")
     
+    def clip(self,min_value=-np.inf,max_value=np.inf):
+        if self.shape==1:
+            raise ValueError("Cannot clip Measure of shape 1")
+        else:
+            if isinstance(min_value,(int,float)):
+                lower_bound = (self.value>=min_value)
+            elif isinstance(min_value,Measured):
+                lower_bound = self>=min_value
+            else:
+                NotImplemented
+            if isinstance(max_value,(int,float)):
+                upper_bound = (self.value<=max_value)
+            elif isinstance(max_value,Measured):
+                upper_bound = (self<=max_value)
+            else:
+                NotImplemented
+            
+            new_value = self.value[lower_bound*upper_bound]
+            if self.SI:
+                return Measured(new_value,self.unit)
+            else:
+                return Measured(new_value,self.misc_unit)
+
+    def __iter__(self):
+        for val in self.value:
+            if self.SI:
+                yield Measured(val,self.unit)
+            else:
+                yield Measured(val,self.misc_unit)
+
     def __eq__(self, other):
         """Defines behavior for the equality operator (==)."""
         if isinstance(other, Measured):
@@ -373,12 +404,87 @@ class Measured:
                     )
         
         def _shape_check(self,data):
-            if self.shape == None:
+            if self.shape is None:
                 Check.condition(data.shape!=1,ValueError,"Must have more than one point for Curve")
-                Check.condition(len(data.shape)==1,ValueError,"Must be a 1D arrat for a Curve component")
-                self.shape == data.shape
+                Check.condition(len(data.shape)==1,ValueError,"Must be a 1D array for a Curve component")
+                self.shape = data.shape
             else:
                 Check.condition(self.shape==data.shape,ValueError,"All Curve components must have the same shape")
+
+        @staticmethod
+        def find_common_range(first_curve,second_curve,axis="x"):
+            Check.object_class(first_curve,Measured.Curve,"First Curve")
+            Check.object_class(second_curve,Measured.Curve,"Second Curve")
+            Check.validity(axis,"Axis",["x","y","z"])
+            first_axis = getattr(first_curve,axis).copy()
+            second_axis = getattr(second_curve,axis).copy()
+            Check.condition((first_axis.unit==second_axis.unit)>0,ValueError,"Curve axes units must match to find common axis")
+            if second_axis.SI:
+                first_axis += Measured(0,second_axis.unit) #this converts to SI if possible
+            if first_axis.SI:
+                second_axis += Measured(0,first_axis.unit) #this converts to SI if possible
+            return max(min(first_axis),min(second_axis)),min(max(first_axis),max(second_axis))
+
+        @staticmethod
+        def find_common_axis(first_curve,second_curve,axis="x"):
+            range_min,range_max = Measured.Curve.find_common_range(first_curve,second_curve)
+            first_axis = getattr(first_curve,axis).clip(range_min,range_max)
+            second_axis = getattr(second_curve,axis).clip(range_min,range_max)
+            second_axis += Measured(0,first_axis.unit) #this converts to SI if possible
+            first_axis += Measured(0,second_axis.unit) #this converts to SI if possible
+            common_axis = np.array(sorted(list(set(first_axis.value).union(set(second_axis.value)))))
+            return Measured(common_axis,first_axis.unit) #this will always return SI
+        
+        @staticmethod
+        def interpolate_based_on_new_x(curve,new_x_axis):
+            Check.object_class(new_x_axis,Measured,"New x-axis")
+            Check.condition((curve.x.unit==new_x_axis.unit)>0,ValueError,"New x axis units must match Measured.Curve x to interpolate")
+            if curve.x.SI:
+                new_x_axis.match_unit_to(curve.x.unit)
+            else:
+                new_x_axis.match_unit_to(curve.x.misc_unit)
+            new_y_value = interpolate.interp1d(curve.x.value, curve.y.value, axis=0)(new_x_axis.value)
+            if len(curve)==2:
+                return Measured.Curve(x=new_x_axis,y=Measured(new_y_value,curve.y.unit))
+            else:
+                new_z_values = interpolate.interp1d(curve.x.value, curve.z.value, axis=0)(new_x_axis.value)
+                return Measured.Curve(x=new_x_axis,y=Measured(new_y_value,curve.y.unit),z=Measured(new_z_values,curve.z.unit))
+
+        @staticmethod
+        def min(first_curve,second_curve):
+            Check.object_class(first_curve,Measured.Curve,"First Curve")
+            Check.object_class(second_curve,Measured.Curve,"Second Curve")
+            if (len(first_curve)==2) and (len(second_curve)==2):
+                new_x_axis = Measured.Curve.find_common_axis(first_curve,second_curve,"x")
+                new_first_curve = Measured.Curve.interpolate_based_on_new_x(first_curve,new_x_axis)
+                new_second_curve = Measured.Curve.interpolate_based_on_new_x(second_curve,new_x_axis)
+                new_second_curve.y += Measured(0,first_curve.y.unit)  #this converts to SI if possible
+                new_first_curve.y += Measured(0,second_curve.y.unit)  #this converts to SI if possible
+                new_y_values = np.zeros_like(new_x_axis.value)
+                new_y_values[new_first_curve.y<=new_second_curve.y] = new_first_curve.y.value[new_first_curve.y<=new_second_curve.y]
+                new_y_values[new_first_curve.y>=new_second_curve.y] = new_second_curve.y.value[new_first_curve.y>=new_second_curve.y]
+                return Measured.Curve(x=new_x_axis,y=Measured(new_y_values,new_first_curve.y.unit))
+            else:
+                raise ValueError("Both curves must be 2D for min operation")
+        
+        @staticmethod
+        def max(first_curve,second_curve):
+            Check.object_class(first_curve,Measured.Curve,"First Curve")
+            Check.object_class(second_curve,Measured.Curve,"Second Curve")
+            if (len(first_curve)==2) and (len(second_curve)==2):
+                new_x_axis = Measured.Curve.find_common_axis(first_curve,second_curve,"x")
+                new_first_curve = Measured.Curve.interpolate_based_on_new_x(first_curve,new_x_axis)
+                new_second_curve = Measured.Curve.interpolate_based_on_new_x(second_curve,new_x_axis)
+                new_second_curve.y += Measured(0,first_curve.y.unit)  #this converts to SI if possible
+                new_first_curve.y += Measured(0,second_curve.y.unit)  #this converts to SI if possible
+                new_y_values = np.zeros_like(new_x_axis.value)
+                new_y_values[new_first_curve.y>=new_second_curve.y] = new_first_curve.y.value[new_first_curve.y>=new_second_curve.y]
+                new_y_values[new_first_curve.y<=new_second_curve.y] = new_second_curve.y.value[new_first_curve.y<=new_second_curve.y]
+                return Measured.Curve(x=new_x_axis,y=Measured(new_y_values,new_first_curve.y.unit))
+            else:
+                raise ValueError("Both curves must be 2D for min operation")
+
+
 
     class Surface(Collection):
         def __init__(
