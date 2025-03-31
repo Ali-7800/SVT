@@ -14,6 +14,7 @@ from svt.appearence import (
 )
 from svt.units import (
     Unit,
+    MiscUnit,
 )
 from svt.plotting import (
     Figure,
