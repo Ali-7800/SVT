@@ -3,6 +3,7 @@ from svt._check import Check
 import numpy as np
 from typing import Union
 from scipy import interpolate
+import dill
 
 class Measured:
     def __init__(self,value,unit:Union[Unit,MiscUnit]):
@@ -359,6 +360,21 @@ class Measured:
         def _shape_check(self,data):
             #any Measured object can be appended to a Collection
             pass
+        
+        def save_to(self,name:str,folder="/"):
+            Check.condition(folder[-1]=="/",ValueError,"Folder path must end with /")
+            if folder=="/":
+                folder = ""
+            with open("{0}{1}.dat".format(folder,name), "wb") as file:
+                dill.dump(self, file)
+        
+        @staticmethod
+        def load(file_path:str):
+            with open(file_path, "rb") as file:
+                collection = dill.load(file)
+                Check.object_class(collection,Measured.Collection,"Loaded file")
+                return collection
+
 
     class Point(Collection):
         def __init__(
