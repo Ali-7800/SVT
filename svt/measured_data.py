@@ -373,7 +373,15 @@ class Measured:
             with open(file_path, "rb") as file:
                 collection = dill.load(file)
                 Check.object_class(collection,Measured.Collection,"Loaded file")
-                return collection
+            return collection
+
+        @staticmethod
+        def load_list(file_path:str):
+            with open(file_path, "rb") as file:
+                data = dill.load(file)
+                Check.list_class(data,Measured.Collection,"Element","Loaded list")
+            return data
+
 
 
     class Point(Collection):
