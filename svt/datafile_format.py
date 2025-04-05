@@ -30,7 +30,7 @@ class SceneDataFile:
                 "Rod {0}'s post processing dictionary does not have radius data, make sure 'radius' is a key in the dictionary".format(i))
         self.rod_groups.append((group_name,post_processing_dict_list))
     
-    def add_rectangular_beam(self,group_name:str,post_processing_dict:list,width:float,thickness:float):
+    def add_rectangular_beam(self,name:str,post_processing_dict:list,width:float,thickness:float):
         Check.condition(
             "position" in post_processing_dict,
             KeyError,
@@ -43,7 +43,7 @@ class SceneDataFile:
             "directors" in post_processing_dict,
             KeyError,
             "Beam's post processing dictionary does not have director data, make sure 'directors' is a key in the dictionary")   
-        self.rectangular_beams.append((group_name,post_processing_dict,width,thickness))
+        self.rectangular_beams.append((name,post_processing_dict,width,thickness))
     
     def add_static_mesh(self,name:str,mesh:object):
         Check.condition(
