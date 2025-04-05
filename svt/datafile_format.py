@@ -140,7 +140,7 @@ class PovraySceneDataFile(SceneDataFile):
                 beam_data["width"] = width
                 beam_data["thickness"] = thickness
                 beams_data[beam_name] = beam_data
-            data["beams_data"] = beam_data
+            data["beams_data"] = beams_data
         
         #add static mesh data
         if len(self.static_meshes)>0:
