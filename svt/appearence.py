@@ -36,7 +36,7 @@ class DefaultAppearence:
     def beam(self,name,frame):
         return 1,1,1,0
     
-    def static_mesh(self,name,frame):
+    def static_mesh(self,name):
         texture_path = None
         normal_path = None
         color = [1,1,1,0]
@@ -50,7 +50,6 @@ class DefaultAppearence:
             return [1,1,1,0]
         smooth_triangle = False
         return texture_path,normal_path,color_func,smooth_triangle
-    
     
     def sphere(self,name,frame):
         return 1,0,0,0
