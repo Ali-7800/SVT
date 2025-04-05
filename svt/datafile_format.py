@@ -95,7 +95,7 @@ class SceneDataFile:
 
 class PovraySceneDataFile(SceneDataFile):
     def __init__(self, name:str, times:np.ndarray):
-        DataFile.__init__(self,name,times)
+        SceneDataFile.__init__(self,name,times)
 
     def save_to(self, folder: str):
         # Save data as dat file
@@ -187,5 +187,5 @@ class PovraySceneDataFile(SceneDataFile):
 
 class ThreeJSSceneDataFile(SceneDataFile):
     def __init__(self, name:str, time:np.ndarray):
-        DataFile.__init__(self,name,time)
+        SceneDataFile.__init__(self,name,time)
     #TODO:finish implementing this
