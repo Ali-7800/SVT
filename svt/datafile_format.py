@@ -4,7 +4,7 @@ import pickle
 from svt._check import Check
 
 class SceneDataFile:
-    def __init__(self,name:str,times:np.ndarray):
+    def __init__(self,name:str,times=None):
         self.name = name
         self.times = times
         self.data = {}
@@ -15,6 +15,9 @@ class SceneDataFile:
         self.spheres = []
         self.cylinders = []
     
+    def add_times(self,times:np.ndarray):
+        self.times = times
+
     def add_rod_group(self,group_name:str,post_processing_dict_list:list):
         for i,post_processing_dict in enumerate(post_processing_dict_list):
             Check.condition(
@@ -94,7 +97,7 @@ class SceneDataFile:
 
 
 class PovraySceneDataFile(SceneDataFile):
-    def __init__(self, name:str, times:np.ndarray):
+    def __init__(self, name:str, times=None):
         SceneDataFile.__init__(self,name,times)
 
     def save_to(self, folder: str):
@@ -186,6 +189,6 @@ class PovraySceneDataFile(SceneDataFile):
         return data
 
 class ThreeJSSceneDataFile(SceneDataFile):
-    def __init__(self, name:str, time:np.ndarray):
-        SceneDataFile.__init__(self,name,time)
+    def __init__(self, name:str, times=None):
+        SceneDataFile.__init__(self,name,times)
     #TODO:finish implementing this
