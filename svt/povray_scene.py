@@ -71,7 +71,7 @@ class PovrayScene(Stage):
         #add rod data
         if "rods_data" in data:
             rods_data = data["rods_data"]
-            for rod_group_name in rods_data:
+            for rod_group_name in rods_data.keys():
                 rod_group_data = rods_data[rod_group_name]
                 for rod_data in rod_group_data:
                     self.add_rod(
@@ -82,7 +82,7 @@ class PovrayScene(Stage):
         #add beam data
         if "beams_data" in data:
             beams_data = data["beams_data"]
-            for beam_name in beams_data:
+            for beam_name in beams_data.keys():
                 beam_data = beams_data[beam_name]
                 self.add_rectangular_beam(
                     beam_data,
@@ -92,7 +92,7 @@ class PovrayScene(Stage):
         #add static mesh data
         if "static_meshes_data" in data:
             meshes_data = data["static_meshes_data"]
-            for mesh_name in meshes_data:
+            for mesh_name in meshes_data.keys():
                 mesh_data = meshes_data[mesh_name]
                 self.add_mesh(
                     mesh_data,
@@ -103,7 +103,7 @@ class PovrayScene(Stage):
         #add dynamic mesh data
         if "dynamic_meshes_data" in data:
             meshes_data = data["dynamic_meshes_data"]
-            for mesh_name in meshes_data:
+            for mesh_name in meshes_data.keys():
                 mesh_data = meshes_data[mesh_name]
                 self.add_mesh(
                     mesh_data,
@@ -114,7 +114,7 @@ class PovrayScene(Stage):
         #add sphere data
         if "spheres_data" in data:
             spheres_data = data["spheres_data"]
-            for sphere_name in spheres_data:
+            for sphere_name in spheres_data.keys():
                 sphere_data = spheres_data[sphere_name]
                 self.add_sphere(
                     sphere_data,
@@ -124,7 +124,7 @@ class PovrayScene(Stage):
         #add cylinder data
         if "cylinders_data" in data:
             cylinders_data = data["cylinders_data"]
-            for cylinder_name in cylinders_data:
+            for cylinder_name in cylinders_data.keys():
                 cylinder_data = cylinders_data[cylinder_name]
                 self.add_cylinder(
                     cylinder_data,
