@@ -363,7 +363,7 @@ def mesh(
 
         mesh_list = []
         mesh_list.append("mesh2 {")
-        n_vertices = vertices.shape[0]
+        n_vertices = vertices.shape[-1]
 
         vertex_list = []
         normals_list = []
@@ -378,11 +378,11 @@ def mesh(
         for i in range(n_vertices):
             vertex_list.append(
                 ",<"
-                + str(vertices[i, 0])
+                + str(vertices[0,i])
                 + ","
-                + str(vertices[i, 1])
+                + str(vertices[1,i])
                 + ","
-                + str(vertices[i, 2])
+                + str(vertices[2,i])
                 + ">"
             )
         vertex_list.append("\n}")
@@ -393,11 +393,11 @@ def mesh(
             for i in range(n_vertices):
                 normals_list.append(
                     ",<"
-                    + str(vertex_normals[i, 0])
+                    + str(vertex_normals[0,i])
                     + ","
-                    + str(vertex_normals[i, 1])
+                    + str(vertex_normals[1,i])
                     + ","
-                    + str(vertex_normals[i, 2])
+                    + str(vertex_normals[2,i])
                     + ">"
                 )
             normals_list.append("\n}")
