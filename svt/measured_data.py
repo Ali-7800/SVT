@@ -337,16 +337,13 @@ class Measured:
         if self.shape == 1:
             self.SI_value = np.array([self.SI_value])
         
-        if (values.shape[0] == self.shape[-1]) and len(values.shape)==1:
-            if self.SI:
-                self.SI_value = np.vstack((self.SI_value,values))
-                self.value = self.SI_value
-            else:
-                self.SI_value = np.vstack((self.SI_value,self.misc_unit.convert_to_SI(np.array(values))))
-                self.value = np.vstack((self.value,np.array(values)))
-            self.shape = self._shape()
+        if self.SI:
+            self.SI_value = np.vstack((self.SI_value,values))
+            self.value = self.SI_value
         else:
-            return NotImplementedError
+            self.SI_value = np.vstack((self.SI_value,self.misc_unit.convert_to_SI(np.array(values))))
+            self.value = np.vstack((self.value,np.array(values)))
+        self.shape = self._shape()
     
     @staticmethod
     def empty(shape,unit):
