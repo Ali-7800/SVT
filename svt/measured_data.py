@@ -331,6 +331,23 @@ class Measured:
             self.value = np.append(self.value,np.array(values))
         self.shape = self._shape()
     
+    def vstack(self,values):
+        if isinstance(values,(float,int)):
+            values = np.array([values])
+        if self.shape == 1:
+            self.SI_value = np.array([self.SI_value])
+        
+        if values.shape == self.shape:
+            if self.SI:
+                self.SI_value = np.vstack((self.SI_value,values))
+                self.value = self.SI_value
+            else:
+                self.SI_value = np.vstack((self.SI_value,self.misc_unit.convert_to_SI(np.array(values))))
+                self.value = np.vstack((self.value,np.array(values)))
+            self.shape = self._shape()
+        else:
+            return NotImplemented
+    
     @staticmethod
     def empty(shape,unit):
         return Measured(np.empty(shape),unit)
