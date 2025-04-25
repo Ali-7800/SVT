@@ -1,5 +1,6 @@
 from svt.matplotlib_visualization import (
     plot_video_with_surface
+    plot_video_without_surface
 )
 from svt.povray_scene import (
     PovrayScene,
