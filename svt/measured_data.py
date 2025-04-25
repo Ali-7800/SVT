@@ -316,7 +316,7 @@ class Measured:
             self.misc_unit = unit_to_match
             self.SI = False
         else:
-            return NotImplemented
+            return NotImplementedError
         
     def append(self,values):
         if isinstance(values,(float,int)):
@@ -337,7 +337,7 @@ class Measured:
         if self.shape == 1:
             self.SI_value = np.array([self.SI_value])
         
-        if values.shape == self.shape:
+        if values.shape[0] == self.shape[-1]:
             if self.SI:
                 self.SI_value = np.vstack((self.SI_value,values))
                 self.value = self.SI_value
@@ -346,7 +346,7 @@ class Measured:
                 self.value = np.vstack((self.value,np.array(values)))
             self.shape = self._shape()
         else:
-            return NotImplemented
+            return NotImplementedError
     
     @staticmethod
     def empty(shape,unit):
