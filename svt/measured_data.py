@@ -242,7 +242,7 @@ class Measured:
             self.value *= factor
         elif isinstance(factor,Measured):
             self.SI_value *= factor.SI_value
-            self.value *= factor
+            self.value *= factor.value
             self.unit *= factor.unit
         else:
             return NotImplemented
