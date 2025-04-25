@@ -337,7 +337,7 @@ class Measured:
         if self.shape == 1:
             self.SI_value = np.array([self.SI_value])
         
-        if values.shape[0] == self.shape[-1]:
+        if (values.shape[0] == self.shape[-1]) and len(values.shape)==1:
             if self.SI:
                 self.SI_value = np.vstack((self.SI_value,values))
                 self.value = self.SI_value
