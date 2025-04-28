@@ -199,6 +199,15 @@ class Unit:
         else:
             new_unit = d2
         return m1,m2,new_unit
+    
+    @staticmethod
+    def unify_prefixes_with_second_symbol(unit_1,unit_2):
+        Check.object_class(unit_1,Unit,"first unit")
+        Check.object_class(unit_2,Unit,"second unit")
+        max_prefix = max(unit_1.prefix,unit_2.prefix)
+        m1,d1 = unit_1._update_prefix(max_prefix)
+        m2,d2 = unit_2._update_prefix(max_prefix)
+        return m1,m2,d2
 
     class Symbol:
         def __init__(

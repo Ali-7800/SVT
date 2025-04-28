@@ -261,7 +261,8 @@ class Measured:
             if name is None:
                 if self.unit.dimension.symbol in unit_to_match:
                     if isinstance(unit_to_match[self.unit.dimension.symbol],Unit):
-                        temp = self + Measured(0,unit_to_match[self.unit.dimension.symbol])
+                        m1,m2,new_unit = Unit.unify_prefixes_with_second_symbol(self.unit,unit_to_match[self.unit.dimension.symbol])
+                        temp = Measured(m1*self.SI_value,new_unit)
                         temp = temp.convert_to(unit_to_match[self.unit.dimension.symbol].alternate_prefix.symbol)
                         self.unit = temp.unit
                         self.SI_value = temp.SI_value
@@ -281,7 +282,8 @@ class Measured:
                 Check.condition(name in unit_to_match,ValueError,"Given name is not in Unit.Collection")
                 Check.condition((unit_to_match[name]==self.unit)>0,ValueError,"Given name does not have units that match")
                 if isinstance(unit_to_match[name],Unit):
-                    temp = self + Measured(0,unit_to_match[name])
+                    m1,m2,new_unit = Unit.unify_prefixes_with_second_symbol(self.unit,unit_to_match[name])
+                    temp = Measured(m1*self.SI_value,new_unit)
                     temp = temp.convert_to(unit_to_match[name].alternate_prefix.symbol)
                     self.unit = temp.unit
                     self.SI_value = temp.SI_value
@@ -299,7 +301,8 @@ class Measured:
                     self.SI = False
         elif isinstance(unit_to_match,Unit):
             Check.condition((unit_to_match==self.unit)>0,ValueError,"Given name does not have units that match")
-            temp = self + Measured(0,unit_to_match) #this will always return the SI value
+            m1,m2,new_unit = Unit.unify_prefixes_with_second_symbol(self.unit,unit_to_match)
+            temp = Measured(m1*self.SI_value,new_unit)
             temp = temp.convert_to(unit_to_match.alternate_prefix.symbol)
             self.unit = temp.unit
             self.SI_value = temp.SI_value
