@@ -241,11 +241,14 @@ class Measured:
             self.SI_value *= factor
             self.value *= factor
         elif isinstance(factor,Measured):
-            self.SI_value *= factor.SI_value
-            self.value *= factor.value
-            self.unit *= factor.unit
+            temp = factor*self
+            self.unit = temp.unit
+            self.SI_value = temp.SI_value
+            self.value = temp.value
+            self.shape = temp.shape
+            self.SI = True #since multiplication with SI always returns an SI value
         else:
-            return NotImplemented
+            return NotImplementedError
     
     def copy(self):
         if self.SI:
