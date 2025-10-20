@@ -168,7 +168,7 @@ class PovraySceneDataFile(SceneDataFile):
 
         #add sphere data
         if len(self.spheres)>0:
-            spheres_data = []
+            spheres_data = {}
             for sphere_name,sphere_dict in self.spheres:
                 sphere_data = {}
                 sphere_data["position"] = sphere_dict["position"]
@@ -178,7 +178,7 @@ class PovraySceneDataFile(SceneDataFile):
             
         #add cylinder data
         if len(self.cylinders)>0:
-            cylinders_data = []
+            cylinders_data = {}
             for cylinder_name,cylinder_dict in self.cylinders:
                 cylinder_data = {}
                 cylinder_data["position"] = cylinder_dict["position"]
