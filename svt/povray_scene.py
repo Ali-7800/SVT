@@ -352,7 +352,7 @@ class PovrayScene(Stage):
             mesh_vertices = np.array(mesh_data["vertices"]).T  # shape: (n_vertices,3)
             mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (n_vertices,3)
             texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (n_vertices,2)
-            texture_path,normal_path,color,smooth_triangle = appearence_function()
+            texture_path,normal_path,color,smooth_triangle = appearence_function(0)
             mesh_static_object = mesh(
                     mesh_vertices,
                     mesh_face_indices,
