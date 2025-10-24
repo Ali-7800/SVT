@@ -349,7 +349,7 @@ class PovrayScene(Stage):
             self.dynamic_objects.append(mesh_dynamic_object)
         else:
             mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
-            mesh_vertices = np.array(mesh_data["vertices"])  # shape: (n_vertices,3)
+            mesh_vertices = np.array(mesh_data["vertices"]).T  # shape: (n_vertices,3)
             mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (n_vertices,3)
             texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (n_vertices,2)
             texture_path,normal_path,color,smooth_triangle = appearence_function()
