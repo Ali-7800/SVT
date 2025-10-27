@@ -350,9 +350,24 @@ class PovrayScene(Stage):
         else:
             mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
             mesh_vertices = np.array(mesh_data["vertices"]).T  # shape: (n_vertices,3)
-            mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (n_vertices,3)
-            texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (n_vertices,2)
             texture_path,normal_path,color,smooth_triangle = appearence_function(0)
+            if smooth_triangle:
+                try:
+                    assert "vertex_normals" in mesh_data
+                    mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,n_vertices,3)
+                    mesh_vertex_normals = interpolate.interp1d(self.times, mesh_vertex_normals, axis=0)(self.times_true)
+                except AssertionError:
+                    raise("vertex_normals are needed for smooth triangle mesh")
+            else:
+                mesh_vertex_normals = np.zeros_like(mesh_vertices)
+            if (texture_path is not None) or (normal_path is not None):
+                try:
+                    assert "texture_vertices" in mesh_data
+                    texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,n_vertices,2)
+                except AssertionError:
+                    raise("texture_vertices are needed for textured mesh")
+            else:
+                texture_vertices = np.zeros_like(mesh_vertices)
             mesh_static_object = mesh(
                     mesh_vertices,
                     mesh_face_indices,
