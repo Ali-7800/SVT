@@ -39,15 +39,19 @@ class DefaultAppearence:
     def static_mesh(self,name):
         texture_path = None
         normal_path = None
-        color = [1,1,1,0]
+        def color_func(face):
+            #pure white mesh
+            return 0,[[1,1,1,0]]
         smooth_triangle = False
-        return texture_path,normal_path,color,smooth_triangle
+        return texture_path,normal_path,color_func,smooth_triangle
     
     def dynamic_mesh(self,name):
         texture_path = None
         normal_path = None
         def color_func(frame):
-            return [1,1,1,0]
+            def _color_func(face):
+                #pure white mesh
+                return 0,[[1,1,1,0]]
         smooth_triangle = False
         return texture_path,normal_path,color_func,smooth_triangle
     

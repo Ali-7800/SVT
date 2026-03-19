@@ -7,7 +7,7 @@ import numpy as np
 from scipy import interpolate
 from tqdm import tqdm
 
-from svt._povmacros import sphere_sweep,prism,sphere,cone,cylinder,plane,mesh,render
+from svt._povmacros import sphere_sweep,prism,sphere,cylinder,mesh,render
 from svt.stage import Stage
 from svt.appearence import DefaultAppearence
 
@@ -48,7 +48,7 @@ class PovrayScene(Stage):
         self.FPS = FPS
         self.static_objects = []
         self.dynamic_objects = []
-        
+    
     def add_simulation_data(
         self,
         data:dict,):
@@ -291,19 +291,6 @@ class PovrayScene(Stage):
                                             )
             self.static_objects.append(cylinder_static_object)
 
-    def add_cone(self,
-                cone_data,
-                appearence_function,
-                static,
-                ):
-        pass
-
-    def add_plane(self,
-                plane,
-                appearence_function,
-                static,):
-        pass
-    
     def add_mesh(
         self,
         mesh_data,
@@ -312,14 +299,14 @@ class PovrayScene(Stage):
         ):
         if not static:
             mesh_dynamic_object = [] #to store the rod povray scripts at each frame for later rendering
-            mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
-            mesh_vertices = np.array(mesh_data["vertices"])  # shape: (timelength,n_vertices,3)
+            mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (3,n_faces)
+            mesh_vertices = np.array(mesh_data["vertices"])  # shape: (timelength,3,n_vertices)
             mesh_vertices = interpolate.interp1d(self.times, mesh_vertices, axis=0)(self.times_true)
             texture_path,normal_path,color_func,smooth_triangle = appearence_function()
             if smooth_triangle:
                 try:
                     assert "vertex_normals" in mesh_data
-                    mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,n_vertices,3)
+                    mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,3,n_vertices)
                     mesh_vertex_normals = interpolate.interp1d(self.times, mesh_vertex_normals, axis=0)(self.times_true)
                 except AssertionError:
                     raise("vertex_normals are needed for smooth triangle mesh")
@@ -328,7 +315,7 @@ class PovrayScene(Stage):
             if (texture_path is not None) or (normal_path is not None):
                 try:
                     assert "texture_vertices" in mesh_data
-                    texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,n_vertices,2)
+                    texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,2,n_vertices)
                 except AssertionError:
                     raise("texture_vertices are needed for textured mesh")
             else:
@@ -348,13 +335,13 @@ class PovrayScene(Stage):
                 mesh_dynamic_object.append(mesh_at_current_frame)
             self.dynamic_objects.append(mesh_dynamic_object)
         else:
-            mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (n_faces, 3)
-            mesh_vertices = np.array(mesh_data["vertices"])  # shape: (n_vertices,3)
-            texture_path,normal_path,color,smooth_triangle = appearence_function()
+            mesh_face_indices = np.array(mesh_data["face_indices"])  # shape: (3,n_faces)
+            mesh_vertices = np.array(mesh_data["vertices"])  # shape: (3,n_vertices)
+            texture_path,normal_path,color_func,smooth_triangle = appearence_function()
             if smooth_triangle:
                 try:
                     assert "vertex_normals" in mesh_data
-                    mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (timelength,n_vertices,3)
+                    mesh_vertex_normals = np.array(mesh_data["vertex_normals"])  # shape: (3,n_vertices)
                     mesh_vertex_normals = interpolate.interp1d(self.times, mesh_vertex_normals, axis=0)(self.times_true)
                 except AssertionError:
                     raise("vertex_normals are needed for smooth triangle mesh")
@@ -363,7 +350,7 @@ class PovrayScene(Stage):
             if (texture_path is not None) or (normal_path is not None):
                 try:
                     assert "texture_vertices" in mesh_data
-                    texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (timelength,n_vertices,2)
+                    texture_vertices = np.array(mesh_data["texture_vertices"])  # shape: (2,n_vertices)
                 except AssertionError:
                     raise("texture_vertices are needed for textured mesh")
             else:
@@ -375,29 +362,10 @@ class PovrayScene(Stage):
                     texture_vertices,
                     texture_path,
                     normal_path,
-                    color,
+                    color_func,
                     smooth_triangle,
                 )
             self.static_objects.append(mesh_static_object)
-
-    def generate_camera_scripts(self):
-        """
-        Generate pov-ray script for all camera setup
-        Returns
-        -------
-        scripts : list
-            Return list of pov-scripts (string) that includes camera and assigned lightings.
-        """ 
-        scripts = {}
-        for idx, camera in enumerate(self.cameras):
-            light_ids = self._light_assign[idx] + self._light_assign[-1]
-            cmds = []
-            cmds.append(self.pre_scripts)
-            cmds.append(str(camera))  # Script camera
-            for light_id in light_ids:  # Script Lightings
-                cmds.append(str(self.lights[light_id]))
-            scripts[camera.name] = "\n".join(cmds)
-        return scripts
 
     def render_frames(
                 self,
@@ -407,17 +375,30 @@ class PovrayScene(Stage):
                 HEIGHT = 1080,
                 DISPLAY_FRAMES = "Off",):
         batch = []
-        stage_scripts = self.generate_camera_scripts()
-        for view_name in stage_scripts.keys():  # Make Directory
+        script = [self.pre_scripts] + self.static_objects.copy() #add static objects to current stage script
+        
+        # Colect povray scripts for each camera
+        for idx, camera in enumerate(self.cameras):
+            view_name = camera.name
             output_path = os.path.join(output_images_directory, view_name)
             os.makedirs(output_path, exist_ok=True)
-        
-        # Colect povray scripts
-        for view_name, stage_script in stage_scripts.items():
-            script = [stage_script] + self.static_objects.copy() #add static objects to current stage script
-            output_path = os.path.join(output_images_directory, view_name)
+            light_ids = self._light_assign[idx] + self._light_assign[-1]
+            
+            #create script for each frame
             for frame_number in tqdm(frames, desc="Scripting"):
                 frame_script = script.copy()
+
+                #update and append camera
+                camera.generate_script(frame_number)
+                frame_script.append(str(camera))
+
+
+                #update and append lights
+                for light_id in light_ids:  # Script Lightings
+                    self.lights[light_id].generate_script(frame_number)
+                    frame_script.append(str(self.lights[light_id]))
+                
+                #append dynamic objects
                 for dynamic_object in self.dynamic_objects:
                     frame_script.append(dynamic_object[frame_number])
 
@@ -452,17 +433,30 @@ class PovrayScene(Stage):
                     threads_per_agent=4):
             
         batch = []
-        stage_scripts = self.generate_camera_scripts()
-        for view_name in stage_scripts.keys():  # Make Directory
+        script = [self.pre_scripts] + self.static_objects.copy() #add static objects to current stage script
+        
+        # Colect povray scripts for each camera
+        for idx, camera in enumerate(self.cameras):
+            view_name = camera.name
             output_path = os.path.join(output_images_directory, view_name)
             os.makedirs(output_path, exist_ok=True)
-        
-        # Colect povray scripts
-        for view_name, stage_script in stage_scripts.items():
-            script = [stage_script] + self.static_objects.copy() #add static objects to current stage script
-            output_path = os.path.join(output_images_directory, view_name)
+            light_ids = self._light_assign[idx] + self._light_assign[-1]
+            
+            #create script for each frame
             for frame_number in tqdm(range(self.total_frame), desc="Scripting"):
                 frame_script = script.copy()
+
+                #update and append camera
+                camera.generate_script(frame_number)
+                frame_script.append(str(camera))
+
+
+                #update and append lights
+                for light_id in light_ids:  # Script Lightings
+                    self.lights[light_id].generate_script(frame_number)
+                    frame_script.append(str(self.lights[light_id]))
+                
+                #append dynamic objects
                 for dynamic_object in self.dynamic_objects:
                     frame_script.append(dynamic_object[frame_number])
 
@@ -501,7 +495,8 @@ class PovrayScene(Stage):
                 pbar.update()
 
         # Create Videos using ffmpeg
-        for view_name in stage_scripts.keys():
+        for camera in self.cameras:
+            view_name = camera.name
             imageset_path = os.path.join(output_images_directory, view_name)
             filename = rendering_name + "_" + view_name + ".mp4"
 

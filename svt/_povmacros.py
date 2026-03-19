@@ -241,114 +241,6 @@ def cylinder(
     cmd = "\n".join(lines)
     return cmd
 
-def cone(
-    x1,
-    x2,
-    r1,
-    r2,
-    color="rgb<0.45,0.39,1>",
-    transmit=0.0,
-    tab="    ",
-    no_shadow = False,
-):
-    """cone POVray script generator
-
-    Generates povray cone object in string.
-    The cone is given with the radii (r1) and (r2) and positions (x1) and (x2)
-
-    Parameters
-    ----------
-    x1 : numpy array
-        Position vector for cone base
-        Expected shape: [3]
-    x2 : numpy array
-        Position vector for cone top
-        Expected shape: [3]
-    r1 : float
-        cone start radius
-        Expected shape: float
-    r2 : float
-        cone end radius
-        Expected shape: float
-    color : str
-        Color of the cone (default: Purple <0.45,0.39,1>)
-    transmit : float
-        Transparency (0.0 to 1.0).
-
-    Returns
-    -------
-    cmd : string
-        Povray script
-    """
-
-    tab = "    "
-
-    # Parameters
-    lines = []
-    lines.append("cone {")
-    lines.append(tab + f"<{x1[0]},{x1[1]},{x1[2]}>,{r1},<{x2[0]},{x2[1]},{x2[2]}>,{r2}")
-    lines.append(tab + tab + "pigment{ color %s transmit %f }" % (color, transmit))
-    if no_shadow is True:
-            lines.append(tab + "no_shadow")
-    lines.append(tab + "}\n")
-
-    cmd = "\n".join(lines)
-    return cmd
-
-def plane(
-    normal = "z",
-    shift = 0.0,
-    image = None,
-    clipped_by = None,
-    tab="    ",
-):
-    """Plane POVray script generator
-
-    Generates povray Plane object in string.
-    The plane is given with a normal vector and shift with respect to that position
-
-    Parameters
-    ----------
-    normal : str
-        normal vector
-        Expected shape: <N1,N2,N3>, or just one of x, y, or z
-    shift : float
-        plane shift
-        Expected shape: float
-    image : str
-        Image path
-    clipped_by: str
-        povray object to clip the plane by
-        Example: sphere{ <-3,2,0>, 2 }
-
-    Returns
-    -------
-    cmd : string
-        Povray script
-    """
-
-    tab = "    "
-
-    # Parameters
-    lines = []
-    lines.append("plane {")
-    lines.append(tab + normal+","+str(shift))
-    if clipped_by is not None:
-        lines.append(tab +"clipped_by{")
-        lines.append(tab + tab +clipped_by)
-        lines.append(tab + "}")
-    if image is not None:
-        lines.append(tab + "pigment{")
-        lines.append(tab+tab+'image_map {jpeg "' +image +'"}')
-        lines.append(tab + "}")
-    else:
-        lines.append(tab + tab + "pigment{ color %s transmit %f }" % ("<0.5,0.5,0.5>", 0.8))
-
-    lines.append(tab + "}\n")
-
-    cmd = "\n".join(lines)
-    return cmd
-
 def mesh(
         vertices,
         faces_indices,
@@ -356,10 +248,10 @@ def mesh(
         texture_vertices,
         texture_path,
         normal_path,
-        color,
+        color_func,
         smooth_triangle,
     ):
-        n_faces = faces_indices.shape[0]
+        n_faces = faces_indices.shape[-1]
 
         mesh_list = []
         mesh_list.append("mesh2 {")
@@ -407,12 +299,13 @@ def mesh(
         for i in range(n_faces):
             face_indices_list.append(
                 ",<"
-                + str(faces_indices[i, 0])
+                + str(faces_indices[0,i])
                 + ","
-                + str(faces_indices[i, 1])
+                + str(faces_indices[1,i])
                 + ","
-                + str(faces_indices[i, 2])
-                + ">"
+                + str(faces_indices[2,i])
+                + ">,"
+                + str(color_func(i)[0])
             )
         face_indices_list.append("\n}")
 
@@ -422,9 +315,9 @@ def mesh(
             for i in range(n_vertices):
                 uv_vectors_list.append(
                     ",<"
-                    + str(texture_vertices[i, 0])
+                    + str(texture_vertices[0,i])
                     + ","
-                    + str(texture_vertices[i, 1])
+                    + str(texture_vertices[1,i])
                     + ">"
                 )
             uv_vectors_list.append("\n}")
@@ -434,11 +327,11 @@ def mesh(
             for i in range(n_faces):
                 uv_indices_list.append(
                     ",<"
-                    + str(faces_indices[i, 0])
+                    + str(faces_indices[0,i])
                     + ","
-                    + str(faces_indices[i, 1])
+                    + str(faces_indices[1,i])
                     + ","
-                    + str(faces_indices[i, 2])
+                    + str(faces_indices[2,i])
                     + ">"
                 )
             uv_indices_list.append("\n}")
@@ -454,29 +347,40 @@ def mesh(
                     + '" \nmap_type 0\nbump_size 50\n}\n}'
                 )
             texture_mapping.append("\n}")
-        elif color is not None:
+        elif color_func is not None:
+            list_of_of_colors = color_func(0)[1]
+            n_colors = len(list_of_of_colors)
             color_mapping.append(
-                "\npigment { color rgbt <"
-                + str(color[0])
-                + ","
-                + "{0},{1},{2}>".format(color[1], color[2], color[3])
-                + "}"
+                "\ntexture_list {\n" +str(n_colors)
+            )
+            for color in list_of_of_colors:
+                color_mapping.append(
+                    "texture {\npigment { color rgbt <"
+                    + str(color[0])
+                    + ","
+                    + "{0},{1},{2}>".format(color[1], color[2], color[3])
+                    + "}\n}"
+                )
+            color_mapping.append(
+                "\n}"
             )
         else:
             raise("Please include a texture_path or an rgbt color")
 
         mesh_list += (
             vertex_list
+            + color_mapping
             + normals_list
             + uv_vectors_list
             + face_indices_list
             + uv_indices_list
             + texture_mapping
-            + color_mapping
         )
         mesh_list.append("\n}")
         mesh_str ="\n".join(mesh_list)
         return mesh_str
+
+
 
 
 def render(

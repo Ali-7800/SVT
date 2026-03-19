@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import Any
+import numpy as np
 class Stage:
     """Stage definition
 
@@ -45,7 +47,7 @@ class Stage:
         camera_id = len(self.cameras)
         self.cameras.append(self.Camera(name=name, **kwargs))
         return camera_id
-
+    
     def add_light(self, camera_id=-1, **kwargs):
         """Add lighting and assign to camera
         Parameters
@@ -64,12 +66,7 @@ class Stage:
         elif isinstance(camera_id, int):
             self._light_assign[camera_id].append(light_id)
         else:
-            raise NotImplementedError("camera_id can only be a list or int")
-
-    def transform_camera(self, dx, R, camera_id):
-        # (TODO) translate or rotate the assigned camera
-        raise NotImplementedError
-
+            raise NotImplementedError("camera_id can only be a list or int")        
 
     # Stage Objects: Camera, Light
     class StageObject:
@@ -94,9 +91,8 @@ class Stage:
 
         def __init__(self):
             self.str = ""
-            self.update_script()
 
-        def update_script(self):
+        def generate_script(self,frame):
             raise NotImplementedError
 
         def __str__(self):
@@ -116,48 +112,68 @@ class Stage:
         def _position2str(self, position):
             assert len(position) == 3
             return "<{},{},{}>".format(*position)
-
-
-    class Camera(StageObject):
-            """Camera object
-
-            http://www.povray.org/documentation/view/3.7.0/246/
-
+        
+        class Vec3:
+            """
+            3D vector object, for defining stage position, directions, and colors in time.
             Attributes
             ----------
-            location : list or tuple
-                Position vector of camera location. (length=3)
-            angle : int
-                Camera angle
-            look_at : list or tuple
-                Position vector of the location where camera points to (length=3)
-            name : str
-                Name of the view-point.
-            sky : list or tuple
-                Tilt of the camera (length=3) [default=[0,1,0]]
+            vec : callable or iterable
+                Must either be a length 3 iterable of floats or returns a length 3 iterable of floats
             """
+            def __init__(self,vec) -> None:
+                if callable(vec):
+                    assert len(vec(0)) == 3,"callable Vec3 must return an object of length 3"
+                    self.vec = vec
+                else:
+                    try:
+                        assert len(vec) == 3,"static Vec3 must be an object of length 3"
+                        self.vec = lambda frame:vec
+                    except TypeError:
+                        raise TypeError("Vec3 input must be either be a length 3 iterable of floats or returns a length 3 iterable of floats")
+            
+            def __call__(self, frame) -> Any:
+                return self.vec(frame)
+    class Camera(StageObject):
+        """Camera object
 
-            def __init__(self, name, location, angle, look_at, sky=(0, 1, 0)):
-                self.name = name
-                self.location = location
-                self.angle = angle
-                self.look_at = look_at
-                self.sky = sky
-                super().__init__()
+        http://www.povray.org/documentation/view/3.7.0/246/
 
-            def update_script(self):
-                location = self._position2str(self.location)
-                look_at = self._position2str(self.look_at)
-                sky = self._position2str(self.sky)
-                cmds = []
-                cmds.append("camera{")
-                cmds.append(f"    location {location}")
-                cmds.append(f"    angle {self.angle}")
-                cmds.append(f"    look_at {look_at}")
-                cmds.append(f"    sky {sky}")
-                cmds.append("    right x*image_width/image_height")
-                cmds.append("}")
-                self.str = "\n".join(cmds)
+        Attributes
+        ----------
+        location : list or tuple
+            Position vector of camera location. (length=3)
+        angle : int
+            Camera angle
+        look_at : list or tuple
+            Position vector of the location where camera points to (length=3)
+        name : str
+            Name of the view-point.
+        sky : list or tuple
+            Tilt of the camera (length=3) [default=[0,1,0]]
+        """
+
+        def __init__(self, name, location, angle, look_at, sky=(0, 1, 0)):
+            super().__init__()
+            self.name = name
+            self.location = self.Vec3(location)
+            self.angle = angle
+            self.look_at = self.Vec3(look_at)
+            self.sky = self.Vec3(sky)
+
+        def generate_script(self,frame):
+            location = self._position2str(self.location(frame))
+            look_at = self._position2str(self.look_at(frame))
+            sky = self._position2str(self.sky(frame))
+            cmds = []
+            cmds.append("camera{")
+            cmds.append(f"    location {location}")
+            cmds.append(f"    angle {self.angle}")
+            cmds.append(f"    look_at {look_at}")
+            cmds.append(f"    sky {sky}")
+            cmds.append("    right x*image_width/image_height")
+            cmds.append("}")
+            self.str = "\n".join(cmds)
 
     class Light(StageObject):
         """Light object
@@ -173,13 +189,13 @@ class Stage:
         """
 
         def __init__(self, location, color):
-            self.location = location
-            self.color = color
+            self.location = self.Vec3(location)
+            self.color = self.Vec3(color)
             super().__init__()
 
-        def update_script(self):
-            location = self._position2str(self.location)
-            color = self._color2str(self.color)
+        def generate_script(self,frame):
+            location = self._position2str(self.location(frame))
+            color = self._color2str(self.color(frame))
             cmds = []
             cmds.append("light_source{")
             cmds.append(f"    {location}")
