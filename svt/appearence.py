@@ -52,6 +52,7 @@ class DefaultAppearence:
             def _color_func(face):
                 #pure white mesh
                 return 0,[[1,1,1,0]]
+            return _color_func
         smooth_triangle = False
         return texture_path,normal_path,color_func,smooth_triangle
     
