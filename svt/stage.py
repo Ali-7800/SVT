@@ -171,7 +171,7 @@ class Stage:
             cmds.append(f"    angle {self.angle}")
             cmds.append(f"    look_at {look_at}")
             cmds.append(f"    sky {sky}")
-            cmds.append("    right x*image_width/image_height")
+            cmds.append("    right -x*image_width/image_height")
             cmds.append("}")
             self.str = "\n".join(cmds)
 
