@@ -1,4 +1,4 @@
-""" POVray macros for mesh_pyelastica
+""" POVray macros
 
 This module includes utility methods to support POVray rendering.
 
@@ -52,13 +52,19 @@ def sphere_sweep(
     tab = "    "
 
     # Parameters
-    num_element = r.shape[0]
+    num_element = x.shape[1]
 
     lines = []
     lines.append("sphere_sweep {")
     lines.append(tab + f"{interpolation} {num_element}")
     for i in range(num_element):
-        lines.append(tab + f",<{x[0,i]},{x[1,i]},{x[2,i]}>,{r[i]}")
+        if i == 0:
+            current_radius = r[i]
+        elif i == num_element-1:
+            current_radius = r[i-1]
+        else:
+            current_radius = 0.5*(r[i]+r[i-1])
+        lines.append(tab + f",<{x[0,i]},{x[1,i]},{x[2,i]}>,{current_radius}")
     lines.append(tab + "texture{")
     lines.append(tab + tab + "pigment{ color %s transmit %f }" % (color, transmit))
     lines.append(tab + tab + "finish{ phong 1 }")
@@ -294,22 +300,20 @@ def mesh(
                 )
             normals_list.append("\n}")
 
-        face_indices_list.append("\nface_indices {")
-        face_indices_list.append("\n" + str(n_faces))
-        for i in range(n_faces):
-            face_indices_list.append(
-                ",<"
-                + str(faces_indices[0,i])
-                + ","
-                + str(faces_indices[1,i])
-                + ","
-                + str(faces_indices[2,i])
-                + ">,"
-                + str(color_func(i)[0])
-            )
-        face_indices_list.append("\n}")
-
         if texture_path is not None:
+            face_indices_list.append("\nface_indices {")
+            face_indices_list.append("\n" + str(n_faces))
+            for i in range(n_faces):
+                face_indices_list.append(
+                    ",<"
+                    + str(faces_indices[0,i])
+                    + ","
+                    + str(faces_indices[1,i])
+                    + ","
+                    + str(faces_indices[2,i])
+                    + ">"
+                )
+            face_indices_list.append("\n}")
             uv_vectors_list.append("\nuv_vectors {")
             uv_vectors_list.append("\n" + str(n_vertices))
             for i in range(n_vertices):
@@ -348,6 +352,20 @@ def mesh(
                 )
             texture_mapping.append("\n}")
         elif color_func is not None:
+            face_indices_list.append("\nface_indices {")
+            face_indices_list.append("\n" + str(n_faces))
+            for i in range(n_faces):
+                face_indices_list.append(
+                    ",<"
+                    + str(faces_indices[0,i])
+                    + ","
+                    + str(faces_indices[1,i])
+                    + ","
+                    + str(faces_indices[2,i])
+                    + ">,"
+                    + str(color_func(i)[0])
+                )
+            face_indices_list.append("\n}")
             list_of_of_colors = color_func(0)[1]
             n_colors = len(list_of_of_colors)
             color_mapping.append(
