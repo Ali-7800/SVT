@@ -444,6 +444,7 @@ def render(
     # Run Povray as subprocess
     cmds = [
         "povray",
+        "+UA",
         "+I" + script_file,
         "+O" + image_file,
         f"-H{height}",

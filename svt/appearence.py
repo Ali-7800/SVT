@@ -9,7 +9,7 @@ class DefaultAppearence:
     Attributes
     ----------
     background_color: list
-        [r,g,b] values for the background color
+        [r,g,b,t] values for the background color
 
     Methods
     -------
@@ -28,7 +28,7 @@ class DefaultAppearence:
 
     """
     def __init__(self) -> None:
-        self.background_color = [1,1,1]
+        self.background_color = [1,1,1,0]
 
     def rod_groups(self,name,frame):
         return 0.45,0.39,1,0

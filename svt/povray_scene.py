@@ -43,7 +43,7 @@ class PovrayScene(Stage):
         #include "functions.inc"
         #include "math.inc"
         #include "transforms.inc"
-        ''' + "background{"+"color rgb<{0},{1},{2}>".format(appearence.background_color[0],appearence.background_color[1],appearence.background_color[2])+"}"
+        ''' + "background{"+"color rgbt<{0},{1},{2},{3}>".format(appearence.background_color[0],appearence.background_color[1],appearence.background_color[2],appearence.background_color[3])+"}"
         Stage.__init__(self)
         self.FPS = FPS
         self.static_objects = []
@@ -149,7 +149,7 @@ class PovrayScene(Stage):
 
         rod_dynamic_object = [] #to store the rod povray scripts at each frame for later rendering
         rod_position = np.array(rod_data["position"])  # shape: (timelength, 3, num_element)
-        rod_radius = np.array(rod_data["radius"])  # shape: (timelength, num_element)
+        rod_radius = np.array(rod_data["radius"])  # shape: (timelength, num_element-1)
 
         xs = interpolate.interp1d(self.times, rod_position, axis=0)(self.times_true)
         rs = interpolate.interp1d(self.times, rod_radius, axis=0)(self.times_true)
@@ -498,6 +498,10 @@ class PovrayScene(Stage):
         for camera in self.cameras:
             view_name = camera.name
             imageset_path = os.path.join(output_images_directory, view_name)
-            filename = rendering_name + "_" + view_name + ".mp4"
+            # filename = rendering_name + "_" + view_name + ".mp4"
 
-            os.system(f"ffmpeg -y -r {self.FPS} -i {imageset_path}/frame_%04d.png {filename}")
+            # os.system(f"ffmpeg -y -r {self.FPS} -i {imageset_path}/frame_%04d.png {filename}")
+            filename = rendering_name + "_" + view_name + ".mov"
+
+            os.system(f"ffmpeg -y -r {self.FPS} -i {imageset_path}/frame_%04d.png -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le {filename}")
+
