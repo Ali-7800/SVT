@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import Any
 import dill
+import gzip
 from functools import partial
 
 def vec_func(frame,vec):
@@ -72,12 +73,12 @@ class Stage:
             raise NotImplementedError("camera_id can only be a list or int")   
 
     def export(self,filename:str):
-        with open(filename+".pkl", "wb") as file:
+        with gzip.open(filename+".gz", "wb") as file:
             dill.dump(self, file)     
 
     @staticmethod
     def load(filename:str):
-        with open(filename, "rb") as file:
+        with gzip.open(filename, "rb") as file:
             loaded_stage = dill.load(file)
         return loaded_stage
 
