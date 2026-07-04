@@ -1,15 +1,17 @@
 from collections import defaultdict
 from typing import Any
-import numpy as np
+import pickle as pk 
+from functools import partial
+
+def vec_func(frame,vec):
+    return vec
+
 class Stage:
     """Stage definition
 
     Collection of the camera and light sources.
     Each camera added to the stage represent distinct viewpoints to render.
     Lights can be assigned to multiple cameras.
-
-    (TODO) Implement transform camera for dynamic camera moves
-    (TODO) make stage less Povray oriented
 
     Attributes
     ----------
@@ -27,6 +29,7 @@ class Stage:
     add_camera : Add new camera (viewpoint) to the stage.
     add_light : Add new light source to the stage for a assigned camera.
     generate_scripts : Generate list of povray script for each camera.
+    export: exports stage using pickle
 
     Class Objects
     -------------
@@ -66,7 +69,17 @@ class Stage:
         elif isinstance(camera_id, int):
             self._light_assign[camera_id].append(light_id)
         else:
-            raise NotImplementedError("camera_id can only be a list or int")        
+            raise NotImplementedError("camera_id can only be a list or int")   
+
+    def export(self,filename:str):
+        with open(filename+".pkl", "wb") as file:
+            pk.dump(self, file)     
+
+    @staticmethod
+    def load(filename:str):
+        with open(filename, "rb") as file:
+            loaded_stage = pk.load(file)
+        return loaded_stage
 
     # Stage Objects: Camera, Light
     class StageObject:
@@ -128,7 +141,7 @@ class Stage:
                 else:
                     try:
                         assert len(vec) == 3,"static Vec3 must be an object of length 3"
-                        self.vec = lambda frame:vec
+                        self.vec = partial(vec_func,vec=vec)
                     except TypeError:
                         raise TypeError("Vec3 input must be either be a length 3 iterable of floats or returns a length 3 iterable of floats")
             

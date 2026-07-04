@@ -67,7 +67,7 @@ class PovrayScene(Stage):
         self.runtime = self.times.max()
         self.total_frame = int(self.runtime * self.FPS)  # Number of frames for the scene video
         self.times_true = np.linspace(0, self.runtime, self.total_frame)  # Adjusted timescale
-
+        
         #add rod data
         if "rods_data" in data:
             rods_data = data["rods_data"]
