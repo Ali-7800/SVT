@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import Any
-import pickle as pk 
+import dill
 from functools import partial
 
 def vec_func(frame,vec):
@@ -73,12 +73,12 @@ class Stage:
 
     def export(self,filename:str):
         with open(filename+".pkl", "wb") as file:
-            pk.dump(self, file)     
+            dill.dump(self, file)     
 
     @staticmethod
     def load(filename:str):
         with open(filename, "rb") as file:
-            loaded_stage = pk.load(file)
+            loaded_stage = dill.load(file)
         return loaded_stage
 
     # Stage Objects: Camera, Light
