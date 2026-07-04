@@ -7,6 +7,9 @@ This module includes utility methods to support POVray rendering.
 import subprocess
 import numpy as np
 
+def sf(x):
+    x = float(np.format_float_positional(x, precision=3, unique=False, fractional=False,trim='k'))
+    return x
 
 def sphere_sweep(
     x,
@@ -64,7 +67,7 @@ def sphere_sweep(
             current_radius = r[i-1]
         else:
             current_radius = 0.5*(r[i]+r[i-1])
-        lines.append(tab + f",<{x[0,i]},{x[1,i]},{x[2,i]}>,{current_radius}")
+        lines.append(tab + f",<{sf(x[0,i])},{sf(x[1,i])},{sf(x[2,i])}>,{sf(current_radius)}")
     lines.append(tab + "texture{")
     lines.append(tab + tab + "pigment{ color %s transmit %f }" % (color, transmit))
     lines.append(tab + tab + "finish{ phong 1 }")
@@ -276,11 +279,11 @@ def mesh(
         for i in range(n_vertices):
             vertex_list.append(
                 ",<"
-                + str(vertices[0,i])
+                + str(sf(vertices[0,i]))
                 + ","
-                + str(vertices[1,i])
+                + str(sf(vertices[1,i]))
                 + ","
-                + str(vertices[2,i])
+                + str(sf(vertices[2,i]))
                 + ">"
             )
         vertex_list.append("\n}")
@@ -291,11 +294,11 @@ def mesh(
             for i in range(n_vertices):
                 normals_list.append(
                     ",<"
-                    + str(vertex_normals[0,i])
+                    + str(sf(vertex_normals[0,i]))
                     + ","
-                    + str(vertex_normals[1,i])
+                    + str(sf(vertex_normals[1,i]))
                     + ","
-                    + str(vertex_normals[2,i])
+                    + str(sf(vertex_normals[2,i]))
                     + ">"
                 )
             normals_list.append("\n}")
