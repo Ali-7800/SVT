@@ -15,7 +15,14 @@ scientific visualization purposes.
   - macOS: `brew install povray`
   - Windows: download an installer from the [POV-Ray downloads page](http://www.povray.org/download/)
 
-  > Any POV-Ray 3.6+ install works. Note that POV-Ray 3.6 itself has no built-in multithreading — SVT works around this by invoking it per-frame via generated INI files and parallelizing at the Python level, so rendering still scales across cores even on older POV-Ray builds.
+  > Any POV-Ray 3.6+ install works.
+
+- **[FFmpeg](https://ffmpeg.org/)** — after rendering per-frame PNGs, SVT calls `ffmpeg` to stitch them into a video, so it also needs to be on your `PATH`.
+  - Debian/Ubuntu: `sudo apt install ffmpeg`
+  - macOS: `brew install ffmpeg`
+  - Windows: download a build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) or [ffmpeg.org/download.html](https://ffmpeg.org/download.html) and add the `bin` folder to your `PATH`
+
+  > SVT encodes videos as ProRes 4444 (`.mov`, with an alpha channel via `yuva444p10le`) to preserve transparency for compositing. Standard FFmpeg builds from the sources above include `prores_ks` support out of the box; no extra build flags are needed.
 
 ### Steps
 
