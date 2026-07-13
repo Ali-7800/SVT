@@ -123,6 +123,7 @@ def render_povray(
     cmds = [
         povray_exe,
         "+UA" if transparency else None,
+        "+D0",
         f"+I{script_file}",
         f"+O{image_file}",
         f"-H{height}",
