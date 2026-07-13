@@ -1,33 +1,22 @@
-from svt.matplotlib_visualization import (
-    plot_video_with_surface,
-    plot_video_without_surface
+from svt._check import Check
+from svt.rendering.scene import (
+    Scene,
 )
-from svt.povray_scene import (
-    PovrayScene,
+from svt.rendering.stage import (
+    Stage,
 )
-from svt.datafile_format import (
-    SceneDataFile,
-    PovraySceneDataFile,
-    ThreeJSSceneDataFile,
-)
-from svt.appearence import (
-    DefaultAppearence
-)
-from svt.units import (
-    Unit,
-    MiscUnit,
-)
-from svt.plotting import (
+from svt.rendering.scene_objects import Sphere, SphereSweep, Cylinder, Cone, Plane, Mesh
+
+from svt.plotting.plotting import (
     Figure,
     MatplotlibFigure,
 )
-from svt._check import (
-    Check
+from svt.data.units import (
+    Unit,
+    MiscUnit,
 )
-from svt.unit_collections import (
+from svt.data.unit_collections import (
     SI,
     MiscUnits,
 )
-from svt.measured_data import (
-    Measured
-)
+from svt.data.measured_data import Measured
