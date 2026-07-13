@@ -241,10 +241,12 @@ class Mesh(Scene.Object):
     def generate_script(self, time):
         """Build the POV-Ray mesh2 {...} script for this mesh at the given time.
 
-        Section order is:
-        vertex_vectors -> texture_list (if not image-mapped) -> normal_vectors
-        -> uv_vectors (if image-mapped) -> face_indices -> uv_indices
-        (if image-mapped) -> texture {...} (if image-mapped).
+        POV-Ray's mesh2 grammar is positional, not keyword-order-independent:
+        blocks must appear as vertex_vectors -> normal_vectors -> uv_vectors
+        -> texture_list -> face_indices -> uv_indices -> texture {...}
+        (each block after vertex_vectors/face_indices is optional, but present
+        blocks must stay in this relative order or POV-Ray's parser errors out
+        expecting the next block in sequence).
         """
         faces_indices = self.faces_indices(time)
         n_faces = faces_indices.shape[-1]
@@ -269,9 +271,6 @@ class Mesh(Scene.Object):
             ),
         ]
 
-        if not use_image_map:
-            sections.append(self._generate_texture_list(time, use_face_colors))
-
         if self.vertex_normals is not None:
             vertex_normals = self.vertex_normals(time)
             sections.append(
@@ -294,6 +293,9 @@ class Mesh(Scene.Object):
                     (self._fmt_floats(uv_vectors[:, i]) for i in range(n_vertices)),
                 )
             )
+
+        if not use_image_map:
+            sections.append(self._generate_texture_list(time, use_face_colors))
 
         color_indices = None
         if use_face_colors:
