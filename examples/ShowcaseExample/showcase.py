@@ -22,7 +22,7 @@ def build_showcase_scene():
     )
     # camera_id=-1 (default) assigns this light to every camera.
     scene.add_light(location=[-8, 12, -10], color=[1, 1, 1])
-    scene.add_light(location=[8, 6, -6], color=[0.6, 0.6, 0.8])
+    scene.add_light(location=[8, 6, -6], color=[0.6, 0.6, 0.8], shadow=False)
 
     # --- Ground plane, planar image map -------------------------------
     ground = Plane("ground", normal=[0, 1, 0], distance=-1)
@@ -35,6 +35,7 @@ def build_showcase_scene():
         "sphere_plain", position=lambda t: [-8, 1 + np.sin(t), 0], radius=1
     )  # moving position
     sphere_plain.color = [0.2, 0.6, 0.9]
+    sphere_plain.shadow = False
     scene.append(sphere_plain)
 
     sphere_image = Sphere(

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from svt.rendering.utils import TimeVecN, sf
+from svt.rendering.utils import TimeVecN, sf, _bool_property
 from numbers import Real
 
 
@@ -130,6 +130,9 @@ class Stage:
 
         def __init__(self):
             self.str = ""
+            self.shadow = True
+
+        shadow = _bool_property("shadow", True)
 
         def generate_script(self, time):
             raise NotImplementedError
@@ -190,6 +193,7 @@ class Stage:
                     row
                     ...
                     <texture>
+                    <shadow_modifier>
                 }
             `rows` are pre-formatted, tab-indented here.
             """
@@ -199,6 +203,8 @@ class Stage:
                 lines.append(tab + header_extra)
             lines.extend(tab + row for row in rows)
             lines.append(self.generate_texture_script(time))
+            if not self.shadow:
+                lines.append("no_shadow")
             lines.append(tab + "}\n")
             return "\n".join(lines)
 
@@ -258,10 +264,11 @@ class Stage:
             Example) color='White', color=[1,1,1]
         """
 
-        def __init__(self, location, color):
+        def __init__(self, location, color, shadow=True):
+            super().__init__()
             self.location = TimeVecN(location)
             self.color = TimeVecN(color)
-            super().__init__()
+            self.shadow = shadow
 
         def generate_script(self, time):
             location = self._position2str(self.location(time))
@@ -271,6 +278,7 @@ class Stage:
                     "light_source{",
                     f"    {location}",
                     f"    color {color}",
+                    "shadowless" if not self.shadow else "",
                     "}",
                 ]
             )
