@@ -8,7 +8,13 @@ import numpy as np
 
 
 def build_showcase_scene():
-    scene = Scene(FPS=20, background_color=[0.02, 0.02, 0.05, 0])
+    scene = Scene()
+    scene.background.color = lambda t: [
+        min(0.2 * t, 1),
+        min(0.2 * t, 1),
+        min(0.2 * t, 1),
+        0,
+    ]  # changin background color
 
     camera_id = scene.add_camera(
         name="main",
@@ -174,11 +180,13 @@ def build_showcase_scene():
 
 if __name__ == "__main__":
     scene, camera_id = build_showcase_scene()
-
-    scene.render_video(
+    scene.export("my_scene")  # export feature for saving scenes
+    loade_scene = Scene.load("my_scene.gz")  # load feature
+    loade_scene.render_video(
         output_images_directory="",
         rendering_name="showcase",
         start_time=0,
         final_time=5,
         multiprocessing_flag=True,
+        frames_per_second=20,
     )

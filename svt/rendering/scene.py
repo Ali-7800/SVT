@@ -13,6 +13,8 @@ from svt.rendering.utils import (
     _bool_property,
     _extension_from_path,
 )
+import dill
+import gzip
 
 
 class Scene(Stage):
@@ -20,14 +22,9 @@ class Scene(Stage):
 
     def __init__(
         self,
-        FPS=20,
-        background_color=[0, 0, 0, 0],
-        transparent_background=False,
     ) -> None:
-        Stage.__init__(self, background_color)
+        Stage.__init__(self)
         self.objects = []
-        self.transparent_background = transparent_background
-        self.FPS = FPS
 
     class Object(Stage.Object):
         """Base class for every renderable POV-Ray object.
@@ -241,6 +238,31 @@ class Scene(Stage):
                 "iridescence_turbulence", TimeScalar, 0
             )
 
+    def export(self, filename: str):
+        with gzip.open(filename + ".gz", "wb") as file:
+            dill.dump(
+                [
+                    self.objects,
+                    self.cameras,
+                    self.lights,
+                    self._light_assign,
+                    self.background,
+                ],
+                file,
+            )
+
+    @staticmethod
+    def load(filename: str):
+        with gzip.open(filename, "rb") as file:
+            scene_attributes = dill.load(file)
+        loaded_scene = Scene()
+        for attribute_name, attribute in zip(
+            ["objects", "cameras", "lights", "_light_assign", "background"],
+            scene_attributes,
+        ):
+            setattr(loaded_scene, attribute_name, attribute)
+        return loaded_scene
+
     def append(self, item):
         if not isinstance(item, Scene.Object):
             raise TypeError(
@@ -252,13 +274,12 @@ class Scene(Stage):
         self,
         output_images_directory,
         times,
-        name="Frame",
+        name="time",
         WIDTH=1920,
         HEIGHT=1080,
         DISPLAY_FRAMES="Off",
     ):
         batch = []
-        script = [self.pre_scripts]
 
         # Colect povray scripts for each camera
         for idx, camera in enumerate(self.cameras):
@@ -269,7 +290,7 @@ class Scene(Stage):
 
             # create script for each given time
             for frame_number, time in tqdm(enumerate(times), desc="Scripting"):
-                frame_script = script.copy()
+                frame_script = [self.background.generate_script(time)]
 
                 # update and append camera
                 camera.generate_script(time)
@@ -304,7 +325,7 @@ class Scene(Stage):
                 height=HEIGHT,
                 display=DISPLAY_FRAMES,
                 pov_thread=multiprocessing.cpu_count(),
-                transparency=self.transparent_background,
+                transparency=self.background.transparent,
             )
             pbar.update()
 
@@ -314,16 +335,16 @@ class Scene(Stage):
         rendering_name,
         final_time,
         start_time=0,
-        WIDTH=1920,
-        HEIGHT=1080,
+        width=1920,
+        height=1080,
         DISPLAY_FRAMES="Off",
-        multiprocessing_flag=False,
-        threads_per_agent=4,
+        multiprocessing_flag: bool = False,
+        threads_per_agent: int = 4,
+        frames_per_second: int = 20,
     ):
 
         batch = []
-        script = [self.pre_scripts]
-        total_frames = int((final_time - start_time) * self.FPS)
+        total_frames = int((final_time - start_time) * frames_per_second)
 
         # Colect povray scripts for each camera
         for idx, camera in enumerate(self.cameras):
@@ -334,8 +355,8 @@ class Scene(Stage):
 
             # create script for each frame
             for frame_number in tqdm(range(total_frames), desc="Scripting"):
-                current_time = start_time + frame_number / self.FPS
-                frame_script = script.copy()
+                current_time = start_time + frame_number / frames_per_second
+                frame_script = [self.background.generate_script(current_time)]
 
                 # update and append camera
                 camera.generate_script(current_time)
@@ -367,11 +388,11 @@ class Scene(Stage):
             n_agents = multiprocessing.cpu_count() // 2  # number of parallel rendering.
             func = partial(
                 render_povray,
-                width=WIDTH,
-                height=HEIGHT,
+                width=width,
+                height=height,
                 display=DISPLAY_FRAMES,
                 pov_thread=threads_per_agent,
-                transparency=self.transparent_background,
+                transparency=self.background.transparent,
             )
             with Pool(n_agents) as p:
                 for message in p.imap_unordered(func, batch):
@@ -381,11 +402,11 @@ class Scene(Stage):
             for filename in batch:
                 render_povray(
                     filename,
-                    width=WIDTH,
-                    height=HEIGHT,
+                    width=width,
+                    height=height,
                     display=DISPLAY_FRAMES,
                     pov_thread=multiprocessing.cpu_count(),
-                    transparency=self.transparent_background,
+                    transparency=self.background.transparent,
                 )
                 pbar.update()
 
@@ -396,7 +417,7 @@ class Scene(Stage):
             filename = rendering_name + "_" + view_name + ".mov"
 
             os.system(
-                f"ffmpeg -y -r {self.FPS} -i {imageset_path}/frame_%04d.png -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le {filename}"
+                f"ffmpeg -y -r {frames_per_second} -i {imageset_path}/frame_%04d.png -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le {filename}"
             )
 
     def render_interactive(

@@ -2,7 +2,8 @@
 
 from svt import Scene, Sphere, Plane
 
-scene = Scene(FPS=24, background_color=[0.02, 0.02, 0.05, 0])
+scene = Scene()
+scene.background.color = [0.02, 0.02, 0.05, 0]
 
 camera_id = scene.add_camera(
     name="main",

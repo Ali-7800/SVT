@@ -1,6 +1,6 @@
 from collections import defaultdict
-from svt.rendering.utils import TimeVecN, sf, _bool_property
-from numbers import Real
+from svt.rendering.utils import TimeVecN, sf, _bool_property, _wrapped_property
+from functools import partial
 
 
 class Stage:
@@ -25,8 +25,6 @@ class Stage:
     -------
     add_camera : Add new camera (viewpoint) to the stage.
     add_light : Add new light source to the stage for a assigned camera.
-    generate_scripts : Generate list of povray script for each camera.
-    export: exports stage using pickle
 
     Class Objects
     -------------
@@ -35,36 +33,10 @@ class Stage:
     Light
     """
 
-    def __init__(self, background_color=(0, 0, 0, 0)):
-        if len(background_color) != 4:
-            raise ValueError("Must be an iterable with length 4")
-        for component in background_color:
-            if not (isinstance(component, Real) and 0 <= component <= 1):
-                raise ValueError(
-                    "All color values must be real numbers between 0 and 1"
-                )
-
-        bg = ",".join(str(c) for c in background_color)
-        self.pre_scripts = f"""
-        #version 3.6; // 3.7;
-        #default{{ finish{{ ambient 0.1 diffuse 0.9 }}}}
-        #include "colors.inc"
-        #include "textures.inc"
-        #include "glass.inc"
-        #include "metals.inc"
-        #include "golds.inc"
-        #include "stones.inc"
-        #include "woods.inc"
-        #include "shapes.inc"
-        #include "shapes2.inc"
-        #include "functions.inc"
-        #include "math.inc"
-        #include "transforms.inc"
-        background{{color rgbt<{bg}>}}
-        """
-
+    def __init__(self):
         self.cameras = []
         self.lights = []
+        self.background = self.Background()
         self._light_assign = defaultdict(list)
 
     def add_camera(self, name, **kwargs):
@@ -103,7 +75,6 @@ class Stage:
         else:
             raise NotImplementedError("camera_id can only be a list, tuple, or int")
 
-    # Stage Objects: Camera, Light
     class Object:
         """Template for stage objects
 
@@ -207,6 +178,33 @@ class Stage:
                 lines.append("no_shadow")
             lines.append(tab + "}\n")
             return "\n".join(lines)
+
+    class Background(Object):
+        def __init__(self):
+            self.color = TimeVecN([0, 0, 0, 0], n=4)
+            self.transparent = False
+
+        color = _wrapped_property("color", partial(TimeVecN, n=4), [0, 0, 0, 0])
+        transparent = _bool_property("transparent", False)
+
+        def generate_script(self, time):
+            return f"""
+                    #version 3.6; // 3.7;
+                    #default{{ finish{{ ambient 0.1 diffuse 0.9 }}}}
+                    #include "colors.inc"
+                    #include "textures.inc"
+                    #include "glass.inc"
+                    #include "metals.inc"
+                    #include "golds.inc"
+                    #include "stones.inc"
+                    #include "woods.inc"
+                    #include "shapes.inc"
+                    #include "shapes2.inc"
+                    #include "functions.inc"
+                    #include "math.inc"
+                    #include "transforms.inc"
+                    background{{color rgbt {self._fmt_vec(self.color(time), precision=2)}}}
+                    """
 
     class Camera(Object):
         """Camera object
